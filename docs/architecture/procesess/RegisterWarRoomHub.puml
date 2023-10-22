@@ -1,0 +1,9 @@
+@startuml "Register CWarRoomHub"
+
+participant "New WarRoom Hub" as ha
+participant "Seed War Room Hub" as hb
+
+note over ha: After enabled connection over TOR
+
+ha --> hb : test1
+@enduml

@@ -1,0 +1,26 @@
+@startuml "Authenticate User to hub via ui"
+
+participant "User" as usr
+participant "UI" as ui
+participant "Hub" as hub
+
+note over usr: Get WarRoomIndentity
+usr --> ui : Get WarRoomIndentity( user/password or associated gmail token)
+ui --> hub : Verify user/password with salt, \nreturn PlainIdentity(private key) \nor not exist error
+hub --> ui: PlainIdentity(private key) or not exist error
+ui --> usr: PlainIdentity(private key) or not exist error
+
+note over usr: Has WarRoomIndentity
+usr --> ui : Authentication(UI ID, fingerprint, signature)
+ui --> hub : Is UI ID is valid? \nand fingerprint is exists?\nand is signeture valid?
+hub --> ui: return EncryptedJson(UserPuK, {HubPuK str,session random string})
+ui --> usr: return EncryptedJson(UserPuK, {HubPuK str,session random string})
+
+usr --> ui : EncryptedJson(HubPuK,{session random})
+ui --> hub : EncryptedJson(HubPuK,{session random})
+
+hub --> ui: EncryptedJson(UserPuK, {session, jwt})
+
+note over usr: Has Get Token
+ui --> usr: EncryptedJson(UserPuK, {session, jwt})
+@enduml

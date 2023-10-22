@@ -1,0 +1,136 @@
+@startuml "Authenticate User (with Private Key) to hub via ui Process"
+|User|
+
+
+start
+:Authentication(UI ID, fingerprint, [UserPuK]);
+floating note left: User meaning User Interface 
+|UI|
+:Authentication(UI ID, fingerprint, [UserPuK]);
+floating note left: UI meaning Backend
+|Hub|
+:Authentication(UI ID, fingerprint, [UserPuK]);
+
+if ( Is UI ID is valid or public access avalibole? ) then (no)
+            :return unauthenticated;
+            label sp_unauthenticated
+            |UI|
+            :return unauthenticated;
+            |User|
+            :return unauthenticated;
+            stop
+            |Hub|
+else(yes)
+    if (fingerprint is exists?) then (yes)
+
+    else (no)
+        if (allowed new registries?) then (no)
+            :return unauthenticated;
+            |UI|
+            :return unauthenticated;
+            |User|
+            :return unauthenticated;
+            stop
+            |Hub|
+        else (yes)
+
+
+          if (UserPuK provided?) then (no)
+                :return unauthenticated;
+                |UI|
+                :return unauthenticated;
+                |User|
+                :return unauthenticated;
+                stop
+                |Hub|
+            else (yes)
+
+                
+            :register new;
+            endif        
+        endif
+    endif
+
+    :return EncryptedJson(UserPuK, \n{HubPuK str,session random string, avalible warrooms[] list{id,name}});
+    |UI|
+    :return EncryptedJson;
+endif
+
+|User|
+:Decrypt EncryptedJson;
+:selected warroom = Select Session WarRoom \nor Try to create new passing parameter (Alias, Name, description);
+:Encrypt Json(HubPuK, {session random string, selected warroom});
+|UI|
+:EncryptedJson;
+|Hub|
+:Dec EncryptedJson;
+
+if ( decrypted successfuly?\nand signature verified \nand session random string correct ) then (no) 
+    :return unauthenticated;
+    |UI|
+    :return unauthenticated;
+    |User|
+    :return unauthenticated;
+    stop    
+    
+else (yes)
+    |Hub|
+
+    if ( Selected warroom not exists) then (not exists)
+        :create new war room;
+        :get WarRoomId;
+    else (exists)
+    endif 
+
+    if (Is allowed to access war room ) then (no) 
+        :return un autherized;
+        |UI|
+        :return un autherized;
+        |User|
+        :return un autherized;
+        stop   
+    else (yes)
+
+    endif
+
+    |Hub|
+    :new JWT(UserPuKSig,WarRoomId);
+    :EncryptedJson(UserPuK, {session, jwt});
+    |UI|
+    :EncryptedJson(UserPuK, {session, jwt});
+
+endif
+
+|User|
+:jwtEnc = EncryptedJson(UserPuK, {session, jwt});
+:jwt = DecryptedJson(UserPrK, jwtEnc);
+:set JWT as user session;
+
+:send EncryptedJson(HubPuK, { jwt, Command } );
+|UI|
+:send EncryptedJson(HubPuK, { jwt, Command } );
+|Hub|
+:Decrypt(HubPrK,EncryptedJson(HubPuK, { jwt, Command } );
+if (jwt verified? ) then (no)
+    :return unauthenticated;
+    |UI|
+    :return unauthenticated;
+    |User|
+    :return unauthenticated;
+    stop    
+
+else (yes)
+    |Hub|
+    :check valid command verify schema;
+    :check permissions;
+    :result = Execute Command;
+    :EncryptedJson(UserPuk, {command,result,jwt});
+    |UI|
+    :EncryptedJson(UserPuk, {command,result,jwt});
+    |User|
+    :EncryptedJson(UserPuk, {command,result,jwt});
+endif 
+
+
+end
+@enduml
