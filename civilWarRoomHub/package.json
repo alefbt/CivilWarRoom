@@ -1,6 +1,6 @@
 {
   "name": "civilWarRoomHub",
-  "version": "1.0.0",
+  "version": "1.3.7",
   "description": "A system that supports a state of war for civilian needs. Because of a war situation in Israel, the people of Israel unite and open war rooms to help each other in a war situation.",
   "main": "server.js",
   "author": "Yehuda Korotkin <it.is.yehuda@gmail.com>",
@@ -9,7 +9,8 @@
   "scripts": {
     "test": "mocha --recursive \"test/**/*.spec.js\" --timeout 10000",
     "dev": "node server",
-    "devDocker": "yarn install ; node server"
+    "devDocker": "yarn install ; node server",
+    "build": "echo 'test'; exit 0"
   },
   "dependencies": {
     "amqplib": "^0.10.3",

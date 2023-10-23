@@ -29,7 +29,11 @@ warroomIdentity.getIdentity(appContext).then((wridentity)=>{
 
 
 const express = require('express')
+const serveStatic = require('serve-static')
+
 const app = express()
+
+app.use(serveStatic("./public"))
 app.use(express.json());
 const port = process.env.PORT || 8080
 
@@ -40,7 +44,7 @@ app.use((req, res, next) => {
 
   if(logger.isDebugEnabled)
     logger.debug(`Request url : ${req.url}`)
-  
+
   next()
 })
 

@@ -1,3 +1,3 @@
-FROM node:lts-alpine3.18
+FROM node:21.0.0-bookworm-slim
 
 WORKDIR /usr/app

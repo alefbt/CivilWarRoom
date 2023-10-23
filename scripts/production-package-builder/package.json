@@ -1,0 +1,17 @@
+{
+  "name": "civilwarroom-production-package-builder",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Yehuda Korotkin <it.is.yehuda@gmail.com>",
+  "license": "GPL3",
+  "private": true,
+  "scripts": {
+    "build": "gulp build"
+  },
+  "dependencies": {
+    "del": "^7.1.0",
+    "gulp": "^4.0.2",
+    "gulp-bump": "^3.2.0",
+    "gulp-clean-dir": "^1.0.2"
+  }
+}

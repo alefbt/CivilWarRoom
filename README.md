@@ -3,7 +3,22 @@ A system that supports a state of war for civilian needs. Because of a war situa
 
 # Quick start
 
-TBD
+## Build docker
+Requirements:
+* node.js  > 20.0.0
+* yarn > 1.22
+* docker > 20
+
+Building:
+```bash
+cd ./scripts/
+./build-production-package.sh
+```
+
+Running docker: 
+```bash
+docker run -p 8080:8080  alefbt.com/warroom
+```
 
 # Architecture
 See more about the architecture [here](./docs/architecture/README.md)

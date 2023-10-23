@@ -1,0 +1,4 @@
+node_modules
+src-hub/**/*
+src-ui/**/*
+src-marged-package/**/*
