@@ -1,0 +1,4 @@
+http get localhost:8080/echo \
+uiPublicKeyFingerprint=random-string \
+publicKey=PK.. \
+signeture='signeture(base64({uiPublicKeyFingerprint,publicKey}))'

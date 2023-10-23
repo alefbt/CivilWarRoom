@@ -30,24 +30,38 @@ warroomIdentity.getIdentity(appContext).then((wridentity)=>{
 
 const express = require('express')
 const app = express()
+app.use(express.json());
 const port = process.env.PORT || 8080
 
 appContext.add('expressApp', app)
 
 
+app.use((req, res, next) => {
+
+  if(logger.isDebugEnabled)
+    logger.debug(`Request url : ${req.url}`)
+  
+  next()
+})
+
 const wrApi1Routes = require('./app/api/v1')
-wrApi1Routes.attachRouter(appContext)
+wrApi1Routes.attachRouter(appContext, app)
 
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-
+app.get('/echo', (req, res) => {
+  console.log(req.body);      // your JSON
+  res.send(req.body);    // echo the result back
+})
 
 app.listen(port, () => {
   logger.info(`Started listening on port ${port}`);
 })
+
+
 
 /*
 app.all('*', (req, res) =>{

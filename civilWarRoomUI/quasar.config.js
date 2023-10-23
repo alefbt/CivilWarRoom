@@ -104,8 +104,7 @@ module.exports = configure(function (/* ctx */) {
       host: '0.0.0.0',
       proxy: {
         '/hub/api/v1/info': {
-          target: ((process.env.PROXYUI_HUB_HOST)?`http://${process.env.PROXYUI_HUB_HOST}`: `http://localhost:8080` ) + `/api/v1/info`,
-          ignorePath: true,
+          target: ((process.env.PROXYUI_HUB_HOST)?`http://${process.env.PROXYUI_HUB_HOST}`: `http://localhost:8080` ), // + `/hub/api/v1/info`,
           secure: false,
           changeOrigin: true,
           logLevel: 'debug',

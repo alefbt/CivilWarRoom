@@ -8,7 +8,7 @@ function pickVerificationObjects(dataObj){
   return _.pick(dataObj,  ['metadata', 'data'])
 }
 
-exports.testVerifyResponseObject = function(appContext, armoredPublicKey , data) {
+exports.verifyObjectSigneture = function(appContext, armoredPublicKey , data) {
   return new Promise( (mainResolve, mainReject) => {
 
     const objToVerify = pickVerificationObjects(data)
@@ -19,9 +19,10 @@ exports.testVerifyResponseObject = function(appContext, armoredPublicKey , data)
       const objToSend =  _.extend(f, {
         isVerified: true
       })
-      console.log(objToSend)
+
       mainResolve(objToSend)
-    })
+
+    }).catch(e=>mainReject(e))
 
   })
     

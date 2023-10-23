@@ -4,17 +4,10 @@ const router = express.Router()
 const logger = require('../../utils/logger');
 const apiUtils = require('./v1/utils')
 const warroomIdentityTools = require('../war-room-identity-tools')
-router.use((req, res, next) => {
-    logger.debug(`Time: ${Date.now()}`)
-    next()
-})
 
 
 
-module.exports = router
-module.exports.attachRouter = function(appContext) {
-
-    const expressApp = appContext.get("expressApp")
+module.exports.attachRouter = function(appContext, expressApp) {
 
     router.get('/info', (request, response) => {
         const identity = appContext.get('warroomIdentity')
@@ -44,5 +37,5 @@ module.exports.attachRouter = function(appContext) {
       
 
     logger.debug("Attaching router")
-    expressApp.use('/api/v1/', router)
+    expressApp.use('/hub/api/v1/', router)
 }

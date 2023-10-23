@@ -166,12 +166,20 @@
             v-model="infoUIFingerPrint" :label="$t('RegisterPage.UI FingerPrint')"></q-input>  
 
           </div>
+
+
         <q-stepper-navigation>
-          <q-btn  color="primary" :label="$t('next')" />
+          <q-btn   @click="onAcceptHubDetails" color="primary" :label="$t('next')" />
           <q-btn  flat @click="step--" color="primary" :label="$t('back')" class="q-ml-sm" />
         </q-stepper-navigation>
       </q-step>
 
+      <q-inner-loading
+            :showing="stepAccestInnerloadingSpinner"
+            label="Please wait..."
+            label-class="text-teal"
+            label-style="font-size: 1.1em"
+          />
     </q-stepper>
 
 
@@ -222,7 +230,7 @@
         const pw1 = ref("")
         const pw2 = ref("")
         const formPasswordRef = ref(null)
-
+        const stepAccestInnerloadingSpinner = ref(false)
 
         const warRoomUiStore = useWarRoomUiStore()
         const warRoomHubStore = useWarRoomHubStore()
@@ -244,6 +252,7 @@
           (async () => {
             const identityStore = useIdentityStore();
             
+            stepAccestInnerloadingSpinner.value = true
 
             userKeysLoading.value = true
             const { privateKey, publicKey } = await openpgp.generateKey({
@@ -256,8 +265,7 @@
               userPuK.value = publicKey
               userPrK.value = privateKey
               userKeysLoading.value = false
-
-              identityStore.setIdentity(publicKey);
+              stepAccestInnerloadingSpinner.value = false
                             
           })()
         }
@@ -284,6 +292,7 @@
         infoHubPuK,
         infoUIName,
         infoUIFingerPrint,
+        stepAccestInnerloadingSpinner, 
 
         selectAuthMethod (authMethod) {
           selectedAuthMethod.value = authMethod
@@ -314,6 +323,33 @@
             fullName.value = faker.person.fullName();
             email.value = faker.internet.email();
             formPersonalDetailsRef.value.validate()
+        },
+
+        onAcceptHubDetails() {
+          stepAccestInnerloadingSpinner.value = true
+
+          // Login?
+          // warRoomHubStore.auth(userPrK, passcode) -> puk -> session rky
+          // redirect to login page 
+          warRoomHubStore.authGetSessionRandomKey(userPuK.value,warRoomUiStore.fingerprint).then(f=>{
+            
+            // if not unauthed
+            // decrypt messages
+            // sign and send 
+            // select room or create
+            //??? if the createion of public key from PrK is always same?
+
+            
+            
+            stepAccestInnerloadingSpinner.value = false
+
+            // get the random session string
+
+            //identityStore.setIdentity(publicKey);
+
+          }).catch(e=>{
+            // show error
+          })
         },
         
       }

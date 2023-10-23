@@ -3,13 +3,13 @@
 
 
 start
-:Authentication(UI ID, fingerprint, [UserPuK]);
+:Authentication(UserPuK, UI ID);
 floating note left: User meaning User Interface 
 |UI|
-:Authentication(UI ID, fingerprint, [UserPuK]);
+:Authentication(UserPuK, UI ID);
 floating note left: UI meaning Backend
 |Hub|
-:Authentication(UI ID, fingerprint, [UserPuK]);
+:Authentication(UserPuK, UI ID);
 
 if ( Is UI ID is valid or public access avalibole? ) then (no)
             :return unauthenticated;
@@ -21,43 +21,49 @@ if ( Is UI ID is valid or public access avalibole? ) then (no)
             stop
             |Hub|
 else(yes)
-    if (fingerprint is exists?) then (yes)
-
-    else (no)
-        if (allowed new registries?) then (no)
-            :return unauthenticated;
-            |UI|
-            :return unauthenticated;
-            |User|
-            :return unauthenticated;
-            stop
-            |Hub|
-        else (yes)
-
-
-          if (UserPuK provided?) then (no)
-                :return unauthenticated;
-                |UI|
-                :return unauthenticated;
-                |User|
-                :return unauthenticated;
-                stop
-                |Hub|
-            else (yes)
-
-                
-            :register new;
-            endif        
-        endif
+    if (allowed new registries?) then (no)
+        :return unauthenticated;
+        |UI|
+        :return unauthenticated;
+        |User|
+        :return unauthenticated;
+        stop
+        |Hub|
+    else (yes)
+        |MemDB| 
+        :Map session random string to HubPuK str\n (With TTL of 3min);
+        |Hub|
     endif
 
-    :return EncryptedJson(UserPuK, \n{HubPuK str,session random string, avalible warrooms[] list{id,name}});
+    :return EncryptedJson(UserPuK, \n{HubPuK str,session random string});
     |UI|
     :return EncryptedJson;
 endif
 
 |User|
 :Decrypt EncryptedJson;
+
+:EncryptedJson(HubPuK, \n{session random string}, signature);
+|UI|
+:EncryptedJson(HubPuK, \n{session random string}, signature);
+
+|Hub|
+:EncryptedJson(HubPuK, \n{session random string}, signature);
+
+if (is signeture valid?) then (no)
+    :return unauthenticated;
+    |UI|
+    :return unauthenticated;
+    |User|
+    :return unauthenticated;
+    stop
+    |Hub|
+else (yes)
+    :EncryptedJson(UserPuK,{session random string, avalible warrooms[] list{id,name}});
+endif
+|UI|
+:EncryptedJson(UserPuK,{session random string, avalible warrooms[] list{id,name}});
+|User|
 :selected warroom = Select Session WarRoom \nor Try to create new passing parameter (Alias, Name, description);
 :Encrypt Json(HubPuK, {session random string, selected warroom});
 |UI|

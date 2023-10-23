@@ -13,9 +13,13 @@ export const useWarRoomHubStore = defineStore('WarRoomHub', {
     //doubleCount: (state) => state.counter * 2,
   },
   actions: {
-    async setHubPublicKey(userPublicKey){
+    async authenticateUser(userPublicKey){
+      // get UI ID
+
+    },
+    async setHubPublicKey(hubPublicKey){
       try{
-        const publicKey = await readKey({ armoredKey: userPublicKey });
+        const publicKey = await readKey({ armoredKey: hubPublicKey });
 
           function convertUint8_to_hexStr(uint8) {
             return Array.from(uint8)
@@ -24,7 +28,7 @@ export const useWarRoomHubStore = defineStore('WarRoomHub', {
           }
                   
           this.hasKey = true;
-          this.publicKeyArmored = userPublicKey,
+          this.publicKeyArmored = hubPublicKey,
           this.fingerprint = convertUint8_to_hexStr(publicKey.keyPacket.fingerprint)
           this.keyId =  publicKey.keyPacket.keyID.toHex()
           this.hubName =  publicKey.users.map((u)=>{ return u.userID.name}).join(' ')
