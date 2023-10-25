@@ -8,7 +8,7 @@ const routes = [
       isPublic: false,
     },
     children: [
-      { path: '', props: {}, component: () => import('pages/IndexPage.vue') }
+      { path: '', name:'Homepage', props: {}, component: () => import('pages/IndexPage.vue') }
     ]
   },
   {

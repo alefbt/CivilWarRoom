@@ -1,9 +1,8 @@
 
-const  openpgp = require('openpgp')
 const logger = require('../utils/logger')
 const fs = require('fs')
 const utilsTools = require('../utils/tools')
-const crypto = require('crypto')
+const encTools = require('../utils/encryption')
 
 const warroomIdentity = {
     initated: false
@@ -12,27 +11,25 @@ const warroomIdentity = {
 async function generateNewWarRoomCerticiate (appContext) {
     logger.info("Geneating new WarRoom Certificates")
 
-    const pgpKeys = await openpgp.generateKey({
-        type: 'rsa',
-        rsaBits: 4096,
-        userIDs: [{ name: process.env.WARROOM_NAME, 
-                    email: process.env.WARROOM_EMAIL }],
-        passphrase: process.env.WARROOMHUB_PRIVATE_KEY_SECRET
-    });
-
+    const keys = await encTools.generateKeys(
+        process.env.WARROOM_NAME,
+        process.env.WARROOM_EMAIL,
+        process.env.WARROOMHUB_PRIVATE_KEY_SECRET
+    )
 
     fs.writeFileSync(
         process.env.WARROOMHUB_PUBLIC_KEY_FILE, 
-        pgpKeys['publicKey'], 'utf8')
+        keys['publicKey'], 'utf8')
 
     logger.info(`Saved new WarRoom Certificates`)
+    
     appContext.get('keystore').saveKey('warroomhub', 
         process.env.KEYSTORE_SECRET, 
-        { privateData: pgpKeys['privateKey'] })
+        { privateData: keys['privateKey'] })
     
     logger.warn(`Geneated new WarRoom Certificates`)
 
-    return pgpKeys
+    return keys
 }
 
 async function getCertificates(appContext){
@@ -49,13 +46,10 @@ async function getCertificates(appContext){
 }
 
 async function setWarroomIdentity(armoredPublicKey, armoredPrivateKey){
-
-    const publicKey = await openpgp.readKey({ armoredKey: armoredPublicKey });
-            
-    const privateKey = await openpgp.decryptKey({
-        privateKey: await openpgp.readKey({ armoredKey: armoredPrivateKey }),
-        passphrase: process.env.WARROOMHUB_PRIVATE_KEY_SECRET,
-    });
+    const publicKey = await encTools.openpgpReadKey(armoredPublicKey)
+    const privateKey = await encTools.openpgpDecryptPrivateKey(
+        armoredPrivateKey,
+        process.env.WARROOMHUB_PRIVATE_KEY_SECRET)
 
     warroomIdentity['publicKey'] = publicKey
     warroomIdentity['armoredPublicKey'] = armoredPublicKey
@@ -110,39 +104,20 @@ const getIdentity = async (appContext) => new Promise((resolve,reject)=>{
 })
 exports.getIdentity = getIdentity
 
-exports.verifySign = async (appContext, publicKey, armoredSignature, objToVerify) => new Promise((resolve,reject)=>{
+exports.verifySign = async (appContext, publicKey, armoredSignature, objToVerify) =>
+ new Promise((resolve,reject)=>{
     getIdentity(appContext)
         .then(async wrId=> {
-
-            const signature = await openpgp.readSignature({armoredSignature});
-            const cleartextMessage =  utilsTools.objToBase64(objToVerify)
-            let hash = crypto.createHash('md5').update(cleartextMessage).digest("hex")
-            logger.debug(`verifySign MD5 of data ${hash}`)
-            const message = await openpgp.createMessage({ text: cleartextMessage });
-
-            
-            const verificationResult = await openpgp.verify({
-                message,
-                signature,
-                verificationKeys: wrId.publicKey
-            });
-            
-            const { verified, keyID } = verificationResult.signatures[0];
-
             try {
-                await verified; // throws on invalid signature
-
-                resolve({
-                    verifiedData: objToVerify, 
-                    signature, 
-                    fingerprint: wrId.fingerprint,
-                    signedKey: keyID.toHex()
-                })
+                resolve(await encTools.verifyObjectSigneture(
+                    armoredSignature,
+                    objToVerify,
+                    wrId.publicKey
+                    ))
 
             } catch (e) {
                 reject( new Error('Signature could not be verified: ' + e.message))
             }
-
         })
         .catch(e=>reject(e))
 })
@@ -151,20 +126,7 @@ exports.verifySign = async (appContext, publicKey, armoredSignature, objToVerify
 exports.sign = async (appContext, data) => new Promise((resolve,reject)=>{
     getIdentity(appContext)
         .then(async wrId=> {
-
-            const cleartextMessage =  utilsTools.objToBase64(data)
-            let hash = crypto.createHash('md5').update(cleartextMessage).digest("hex")
-            logger.debug(`Sign MD5 of data ${hash}`)
-
-            const unsignedMessage = await openpgp.createMessage({ text: cleartextMessage });
-            
-            const detachedSignature = await openpgp.sign({
-                message: unsignedMessage, // Message object
-                signingKeys: wrId.privateKey,
-                detached: true
-            });
-
-            resolve({data: data, signeture:detachedSignature, fingerprint: wrId.fingerprint})
+            resolve( await encTools.signObject(data,wrId.privateKey))
         })
         .catch(e=>reject(e))
     

@@ -119,12 +119,12 @@
           </q-card-section>
           <q-card-section>
             <q-input dir="ltr" 
-            type="textarea" readonly :loading="userKeysLoading" outlined v-model="userPuK" :label="$t('RegisterPage.public key')"></q-input>            
+            type="textarea" readonly outlined v-model="userPuK" :label="$t('RegisterPage.public key')"></q-input>            
           </q-card-section>
 
           <q-card-section>
             <q-input  dir="ltr" 
-             type="textarea" readonly :loading="userKeysLoading" outlined v-model="userPrK" :label="$t('RegisterPage.private key')"></q-input>            
+             type="textarea" readonly outlined v-model="userPrK" :label="$t('RegisterPage.private key')"></q-input>            
           </q-card-section>
 
         
@@ -132,7 +132,7 @@
 
 
         <q-stepper-navigation>
-          <q-btn @click="step++" color="primary" :label="$t('next')" />
+          <q-btn @click="stepGeneratedKeys" color="primary" :label="$t('next')" />
 
           <q-btn flat @click="step--" color="primary" :label="$t('back')" class="q-ml-sm" />
                 </q-stepper-navigation>
@@ -176,7 +176,7 @@
 
       <q-inner-loading
             :showing="stepAccestInnerloadingSpinner"
-            label="Please wait..."
+            :label="$t('pleaseWait')"
             label-class="text-teal"
             label-style="font-size: 1.1em"
           />
@@ -199,12 +199,15 @@
   <script>
   import { defineComponent,inject,  ref, watch, computed } from 'vue'
   import LanguageSwitch from 'components/LanguageSwitch.vue'
-  import * as openpgp from 'openpgp'
+  import * as encryption from '../../utils/encryption'
   import { useIdentityStore } from 'stores/identity-store'
   import { useWarRoomUiStore } from 'stores/warroomui-store'
   import { useWarRoomHubStore } from 'stores/warroomhub-store'
 
-  import { useRouter } from 'vue-router' // <- import useRoute here
+  import { useQuasar } from 'quasar'
+  import { useI18n } from 'vue-i18n'
+
+  import { useRouter } from 'vue-router'
   import { faker } from '@faker-js/faker';
 
   export default defineComponent({
@@ -215,6 +218,9 @@
     
 
     setup () {
+        const $q = useQuasar()
+        const $t = useI18n({ useScope: 'global' }).t
+        const router = useRouter()
 
         const userPuK = ref("")
         const userKeysLoading = ref(false)
@@ -242,30 +248,25 @@
         const infoUIName  = ref(warRoomUiStore.uiName)
         const infoUIFingerPrint  = ref(warRoomUiStore.fingerprint)
 
-        const router = useRouter()
 
         const gotoStepGenerateKey = function () {
           step.value = 4;
           
 
           //spinner
+          
+
           (async () => {
-            const identityStore = useIdentityStore();
+            // const identityStore = useIdentityStore();
             
             stepAccestInnerloadingSpinner.value = true
 
             userKeysLoading.value = true
-            const { privateKey, publicKey } = await openpgp.generateKey({
-                  type: 'rsa',
-                  rsaBits: 4096,
-                  userIDs: [{ name: fullName.value, email: email.value }], 
-                  passphrase: pw1 
-              });
-              
-              userPuK.value = publicKey
-              userPrK.value = privateKey
-              userKeysLoading.value = false
-              stepAccestInnerloadingSpinner.value = false
+            const { privateKey, publicKey } = await encryption.generateKeys(fullName.value,email.value,pw1.value)
+            userPuK.value = publicKey
+            userPrK.value = privateKey
+            userKeysLoading.value = false
+            stepAccestInnerloadingSpinner.value = false
                             
           })()
         }
@@ -318,6 +319,26 @@
              }
           })
         },
+        stepGeneratedKeys () {
+
+          $q.dialog({
+            title: $t("RegisterPage.KeysWarningTitle"),
+            message: $t("RegisterPage.KeysWarningMessage"),
+            ok: {
+              push: true
+            },
+            cancel: {
+              push: true,
+              color: 'negative'
+            },
+            persistent: true
+          }).onOk(() => {
+            step.value = 5
+          }).onCancel(() => {
+          }).onDismiss(() => {
+          })
+
+        },
 
         generateFakeNames () { 
             fullName.value = faker.person.fullName();
@@ -331,24 +352,30 @@
           // Login?
           // warRoomHubStore.auth(userPrK, passcode) -> puk -> session rky
           // redirect to login page 
-          warRoomHubStore.authGetSessionRandomKey(userPuK.value,warRoomUiStore.fingerprint).then(f=>{
-            
-            // if not unauthed
-            // decrypt messages
-            // sign and send 
-            // select room or create
-            //??? if the createion of public key from PrK is always same?
-
+           
+          warRoomHubStore.authenticateAndVerifyUser(
+            userPuK.value, warRoomUiStore.fingerprint, userPrK.value, pw1.value
+            ).then(f=>{
             
             
             stepAccestInnerloadingSpinner.value = false
 
-            // get the random session string
-
-            //identityStore.setIdentity(publicKey);
+            $q.dialog({
+              title: $t("RegisterPage.SuccessfulyRegistration"),
+              message: $t("RegisterPage.SuccessfulyRegistrationMessage"),
+              ok: {
+                push: true
+              },
+              
+              persistent: true
+            }).onOk(() => {
+              router.push({name:'AuthLogin'})
+            })
 
           }).catch(e=>{
             // show error
+            stepAccestInnerloadingSpinner.value = false
+
           })
         },
         

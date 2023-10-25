@@ -14,7 +14,7 @@
       
 
         <q-toolbar-title>
-          {{ $t('Civil War Room') }} -  {{ testT }}
+          {{ $t('Civil War Room') }} 
         </q-toolbar-title>
 
 
@@ -60,7 +60,7 @@ import { defineComponent, ref, computed } from 'vue'
 // import EssentialLink from 'components/EssentialLink.vue'
 import LanguageSwitch from 'components/LanguageSwitch.vue'
 import { inject } from 'vue'
-import { useIdentityStore } from 'stores/identity-store';
+import { useUserIdentityStore } from 'stores/user-identity-store';
 import { storeToRefs } from 'pinia';
 
 
@@ -75,14 +75,12 @@ export default defineComponent({
   setup () {
     const leftDrawerOpen = ref(false)
 
-    const {testT} = storeToRefs(useIdentityStore())
+    //const {testT} = storeToRefs(useUserIdentityStore())
     const bus = inject('bus') // inside setup()
 
     return {      
       leftDrawerOpen,
-      testT,
       toggleLeftDrawer () {
-        console.log()
         leftDrawerOpen.value = !leftDrawerOpen.value
         bus.emit('some-event', 'arg1SMMMSMS')
 

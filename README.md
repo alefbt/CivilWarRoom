@@ -39,7 +39,7 @@ Responsible for be repository for data
 * RabbitMQ >= 3
 
 # Development
-Working with GitFlow methodolgy, it means that you open a branch for each task you want to develop e.g. `feature/TASK-<name>` and commit the changes and push after that we will do pull request and marge to development branch.
+Working with GitFlow methodolgy, it means that you open a branch for each task you want to develop e.g. `feature/<name>` and commit the changes and push after that we will do pull request and marge to development branch.
 
 First run the `civilWarRoomHub` the UI has Proxy to API calls to the Hub.
 ```bash
