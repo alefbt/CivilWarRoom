@@ -11,7 +11,6 @@
     // import EssentialLink from 'components/EssentialLink.vue'
     //  import LanguageSwitch from 'components/LanguageSwitch.vue'
   import { inject } from 'vue'
-  import { useIdentityStore } from 'stores/identity-store';
   import { storeToRefs } from 'pinia';
   
   
@@ -25,13 +24,10 @@
   
     setup () {
       const leftDrawerOpen = ref(false)
-  
-      const {testT} = storeToRefs(useIdentityStore())
       const bus = inject('bus') // inside setup()
   
       return {      
         leftDrawerOpen,
-        testT,
         toggleLeftDrawer () {
           console.log()
           leftDrawerOpen.value = !leftDrawerOpen.value

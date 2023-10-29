@@ -103,7 +103,7 @@ module.exports = configure(function (/* ctx */) {
       open: true, // opens browser window automatically,
       host: '0.0.0.0',
       proxy: {
-        '/hub/api/v1/info': {
+        '/hub/api/v1': {
           target: ((process.env.PROXYUI_HUB_HOST)?`http://${process.env.PROXYUI_HUB_HOST}`: `http://localhost:8080` ), // + `/hub/api/v1/info`,
           secure: false,
           changeOrigin: true,
@@ -127,7 +127,9 @@ module.exports = configure(function (/* ctx */) {
       // directives: [],
 
       // Quasar plugins
-      plugins: []
+      plugins: [
+        'Dialog'
+      ]
     },
 
     // animations: 'all', // --- includes all animations

@@ -1,0 +1,174 @@
+@startuml "Auth Process Swimlanes - uthenticate User (with Private Key) to hub via ui Process"
+|User|
+
+start
+:Authentication POST /auth
+        {
+          userPuK,
+          uiFingerprint,
+          type: 'auth-request'
+        };
+floating note left: User meaning User Interface 
+|UI|
+:proxy to hub;
+floating note left: 'UI' means UI Backend;
+
+|Hub|
+
+if ( Protection process success and valid to procede) then (failed) 
+    :return 400,failed;
+    stop
+else (success)
+endif 
+floating note left: e.g. Rate limit, attack patterns etc;
+
+if ( Is UI ID is valid/whitelist/blacklist or public access available? ) then (no)
+    :return unauthenticated;
+    stop
+            
+else(yes)
+    
+    |MemDB| 
+    :Cache Session random string to HubPuK str\n (With TTL of 3min);
+    |Hub|
+
+endif
+
+:Get list of available WarRoms for UserPuK;
+
+:Generate EncryptedJson(UserPuK) with 
+        {
+            sessionKey,
+            hubPublicKey: identity.armoredPublicKey,
+            availableWarRooms: {  id:name, id2:name } // eg 'uuid4-id': 'super cool'
+        };
+|UI|
+:Proxy;
+|User|
+:Decrypt EncryptedJson with UserPrK;
+
+:EncryptedJson(HubPuK, \n{session random string, selectedWarRoom}, signature);
+|UI|
+:Proxy;
+
+|Hub|
+:Decrypt(HubPrK, 
+    EncryptedJson{
+    session random string, 
+    selectedWarRoom}, signature);
+
+if (successfuly decryptred?) then (no)
+    :return unauthenticated;
+    stop
+else (yes)
+    |MemDB|
+    :Get UserPuK by Session random string;
+    |Hub|
+    :Validate Decrypted signature;
+    if (valid signeture) then (no)
+        :return unauthenticated;
+        stop
+    else (yes)
+    endif
+endif
+
+    |Hub|
+    if ( Selected WarRoom exists ? ) then (no)
+        if ( Is allowed to create new WarRoom ? ) then (yes )
+            :create new war room;
+        else (no)
+            :return unautherized;
+            stop   
+        endif
+    else (yes)
+    endif 
+
+    if (Is allowed to access war room ) then (no) 
+        :return unautherized;
+        stop   
+    else (yes)
+    endif
+
+    |Hub|
+    :sessKeys Generate 
+        Session PrivateK, 
+        fingerprint, 
+        sessionSecret :
+            {
+                algo: HMAC_SHA256
+                passcode: generated
+            } ,
+        generatedPasscode;
+    |MemDB|
+    :Store 5m, sessionKey => { 
+            sessKeys.PuK, 
+            generated HMAC_SHA256 verification } ;
+    |Hub|
+    :new JWT(issuesr fingerprint, sessionKey, WarRoomId);
+    :EncryptedJson(UserPuK, {sessionKey, jwt, sessionPrK, generatedPasscode, sessionSecret});
+    |UI|
+    :Proxy;
+    
+
+|User|
+:jwtEnc = Decrypt UserPrK EncryptedJson({
+        sessionKey, jwt, sessionPrK, generatedPasscode, sessionSecret
+    });
+
+:set JWT, sessionPrK, generatedPasscode, sessionSecret 
+ as UserIdentityStore;
+
+
+:User dose something;
+floating note left: User is authenticated 
+
+:send 
+    Json(@version,
+        metadata,
+        data, 
+        signature[HMAC_SHA256,sessionSecret] )
+    header JWT
+;
+
+|UI|
+:proxy;
+|Hub|
+if (jwt verified? ) then (no)
+    :return unauthenticated;
+    stop    
+
+else (yes)
+    |MemDB|
+    :get sessionSecret by sessionKey from JWT;
+    |Hub|
+
+    if (verifiy HMAC_SHA256 with sessionSecret 
+        on requst.data.signeture) then (invalid)
+        :return unautherized;
+        stop   
+
+    else (valid)
+    endif
+
+    :result = EXECUTE COMMAND;
+
+    : Sign Json(@version,
+        metadata,
+        result.data, 
+        signature[HMAC_SHA256,sessionSecret] );
+    |UI|
+    :proxy;
+endif 
+
+|User|
+if (verifiy HMAC_SHA256 with UserIdentityStore.sessionSecret 
+    on requst.data.signeture) then (invalid)
+    :return unautherized;
+    stop   
+    
+else (valid)
+endif
+
+
+end
+@enduml

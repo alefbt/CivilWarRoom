@@ -1,7 +1,7 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
-import { useIdentityStore } from 'stores/identity-store'
+import { useUserIdentityStore } from 'src/stores/user-identity-store'
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -28,7 +28,7 @@ export default route(function ({ store } /* , ssrContext } */) {
 
   Router.beforeEach((to, from, next) => {
    
-    const identityStore = useIdentityStore(store)
+    const identityStore = useUserIdentityStore(store)
 
     try{
       if(to.meta.isPublic===true || identityStore.isAuthenticated){

@@ -1,0 +1,4 @@
+
+exports.requestAuthSessionKey = function(){
+    
+}

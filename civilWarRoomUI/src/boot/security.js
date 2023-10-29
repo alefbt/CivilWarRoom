@@ -4,6 +4,8 @@ import { useWarRoomUiStore } from 'stores/warroomui-store'
 import { useWarRoomHubStore } from 'stores/warroomhub-store'
 
 import { api } from 'boot/axios'
+import axios from 'axios'
+
 import { ref } from 'vue'
 
 export default  boot( async ({ app, store }) => {
@@ -68,7 +70,8 @@ export default  boot( async ({ app, store }) => {
         -----END PGP PUBLIC KEY BLOCK-----     
     `.replace(/^\s+/gm, '').replace(/-{4}$/gm, '----\n'))
     
-    await api.get('./publickey.pgp')
+
+    await axios.create().get('/publickey.pgp')
         .then(response => {
             wrUIPuKArmored.value = response.data
 
@@ -146,7 +149,7 @@ export default  boot( async ({ app, store }) => {
         `.replace(/^\s+/gm, '').replace(/-{4}$/gm, '----\n'));
 
 
-        await api.get('/hub/api/v1/info')
+        await api.get('/info')
         .then(response => {
             wrHubPuKArmored.value = response.data.data.publicKey
             warRoomHubStore.setHubPublicKey(wrHubPuKArmored.value);

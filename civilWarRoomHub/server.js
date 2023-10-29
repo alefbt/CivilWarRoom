@@ -14,10 +14,12 @@ if (process.env.NODE_ENV !== 'production') {
 appContext.add('envvar', process.env)
 appContext.add('packageConfig', packageConfig)
 
+const cache = require('./utils/cache')
+appContext.add('cache', cache)
+
 // Boot keystore
 const secretstore = require('./utils/keystore').load(process.env.KEYSTORE_FILE);
 appContext.add('keystore', secretstore)
-
 
 // Verify if GPG Hub exists
 const warroomIdentity = require('./app/war-room-identity-tools')
@@ -33,6 +35,33 @@ const serveStatic = require('serve-static')
 
 const app = express()
 
+// Security
+const encTools = require('./utils/encryption')
+var { expressjwt: jwt } = require("express-jwt");
+
+const securityTool = require('./utils/security')
+
+app.use(
+  jwt({
+    secret: securityTool.getJWTSecretKey(appContext),
+    algorithms: ["HS256"],
+  }).unless({ path: [
+    "/hub/api/v1/auth",
+    "/hub/api/v1/info",
+    "/echo"
+  ] })
+);
+
+
+
+
+const helmet = require('helmet')
+app.use(helmet())
+app.disable('x-powered-by')
+
+
+
+// General
 app.use(serveStatic("./public"))
 app.use(express.json());
 const port = process.env.PORT || 8080
@@ -61,70 +90,22 @@ app.get('/echo', (req, res) => {
   res.send(req.body);    // echo the result back
 })
 
+
+
+// custom 404
+app.use((req, res, next) => {
+  res.status(404).send({success:false, message:"Sorry can't find that!"})
+})
+
+// custom error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send({success:false, message:'Something broke!'})
+})
+
 app.listen(port, () => {
   logger.info(`Started listening on port ${port}`);
 })
 
-
-
-/*
-app.all('*', (req, res) =>{
-  logger.debug(req.url)
-
-  res.status(404).json({
-      success: false,
-      data: '404'
-  })
-})
-(/)
-
-
-const errorHandler = function (error, request, response, next) {
-  // Error handling middleware functionality
-  console.log( `error ${error.message}`) // log the error
-  const status = error.status || 400
-  // send back an easily understandable error message to the caller
-  response.status(status).send(error.message)
-}
-
-app.use(errorHandler)
-
-
-
-
-
-// 
-
-/*
-
-*/
-
-/*
-
-from: https://nodejs.org/api/https.html#https_https_createserver_options_requestlistener
-
-var privateKey = fs.readFileSync( 'privatekey.pem' );
-var certificate = fs.readFileSync( 'certificate.pem' );
-
-https.createServer({
-    key: privateKey,
-    cert: certificate
-}, app).listen(port);
-
-
-
-const https = require('node:https');
-const fs = require('node:fs');
-
-const options = {
-  pfx: fs.readFileSync('test/fixtures/test_cert.pfx'),
-  passphrase: 'sample',
-};
-
-https.createServer(options, (req, res) => {
-  res.writeHead(200);
-  res.end('hello world\n');
-}).listen(8000); 
-*/
 
 

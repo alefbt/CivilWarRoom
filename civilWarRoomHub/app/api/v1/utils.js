@@ -27,26 +27,29 @@ exports.verifyObjectSigneture = function(appContext, armoredPublicKey , data) {
   })
     
 }
-exports.createResponseObject = function(appContext, data) {
+
+async function createResponseObject (appContext, data) {
+  return await {
+    "@schemaVersion": "1.0.1",
+    "metadata": {},
+    "data": data,
+  }
+}
+
+exports.createPlainResponseObject = createResponseObject
+
+exports.createSignedResponseObject = function(appContext, data) {
 
     return new Promise( (mainResolve, mainReject) => {
 
-        const identity = appContext.get('warroomIdentity')
-    
-        const objToSend = {
-            "@schemaVersion": "server-info#1.0.1",
-            "metadata": {},
-            "data": data,
-          }
-    
-          const objectToVerify = pickVerificationObjects(objToSend, ['metadata', 'data'])
+        const objToSend = createResponseObject(appContext, data)
+        const objectToVerify = pickVerificationObjects(objToSend, ['metadata', 'data'])
 
-          warroomIdentityTools.sign(appContext,objectToVerify).then(f=>{
-    
+        warroomIdentityTools.sign(appContext,objectToVerify).then(f=>{
             objToSend.signeture = f.signeture
     
             mainResolve(objToSend)
-          })
+        })
     
     })
     

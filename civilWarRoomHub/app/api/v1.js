@@ -3,11 +3,12 @@ const express = require('express')
 const router = express.Router()
 const logger = require('../../utils/logger');
 const apiUtils = require('./v1/utils')
-const warroomIdentityTools = require('../war-room-identity-tools')
-
+const v1auth = require('./v1/auth')
 
 
 module.exports.attachRouter = function(appContext, expressApp) {
+
+    v1auth.attachRouter(appContext, router);
 
     router.get('/info', (request, response) => {
         const identity = appContext.get('warroomIdentity')
@@ -22,7 +23,7 @@ module.exports.attachRouter = function(appContext, expressApp) {
 
 
 
-          apiUtils.createResponseObject(appContext, data).then(signedData=>{
+          apiUtils.createSignedResponseObject(appContext, data).then(signedData=>{
             response.send(signedData);
             
             /// TEST VERIFICATION

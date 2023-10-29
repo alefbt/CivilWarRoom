@@ -33,13 +33,21 @@ Responsible for user interface and interaction via WebSocket to WarRoom Hub
 
 ## War Room Hub
 Responsible for be repository for data
+and also serves the UI
 
 ### Requirements
 * MongoDB >= mongodb-community-server:7.0.0-ubi8
 * RabbitMQ >= 3
+* Redis
+
+## Process Description
+### Authentication
+UI means only on the browser of the user e.g. FrontEnd
+
+![Auth process activity](./docs/architecture/images/Auth%20Process%20Activity.png)
 
 # Development
-Working with GitFlow methodolgy, it means that you open a branch for each task you want to develop e.g. `feature/TASK-<name>` and commit the changes and push after that we will do pull request and marge to development branch.
+Working with GitFlow methodolgy, it means that you open a branch for each task you want to develop e.g. `feature/<name>` and commit the changes and push after that we will do pull request and marge to development branch.
 
 First run the `civilWarRoomHub` the UI has Proxy to API calls to the Hub.
 ```bash

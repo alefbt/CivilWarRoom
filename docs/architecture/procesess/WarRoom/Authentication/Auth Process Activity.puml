@@ -1,0 +1,69 @@
+@startuml "Auth Process Activity"
+
+actor       Actor       as usr
+participant UI          as ui
+participant Hub         as hub
+database    MemDB       as mdb
+database    Database    as db
+
+activate usr
+
+usr -> ui : access to UI 
+activate ui
+return redirect to Login page
+
+usr->ui: Provides private key and password
+
+activate ui
+ui->ui:     Get UserPuK, UI Fingerprint 
+ui->hub:    Send auth-request \nwith userPuK, uiFingerprint
+activate hub
+
+hub->mdb: store sessionId=>userPuk
+activate mdb
+return 
+
+hub->hub: EncryptedJson with UserPuK\n (sessionKey,hubPublicKey,availableWarRooms)   
+return 
+
+ui->ui: Decrypt EncryptedJson with UserPrK
+return
+
+usr->ui: Select WarRoom
+activate ui
+ui->hub: Send \nEncryptedJson with hubPublicKey\n (sessionKey, selectedWarRoom)
+activate hub
+hub->hub: validate, signetures, 
+
+hub->db: check permissions, get user DisplayName
+activate db
+return
+
+hub->hub: create JWT (userPuKfingerprint, displayName)
+
+hub->mdb: save sessionId->sharedSecret, validation obj
+activate mdb
+return
+
+return EncryptedJson with userPuK\n (jwt, name)
+
+return
+usr->ui: Do some activity
+activate ui
+
+ui->hub: Message, HMAC(sharedSecret) and header of jwt
+activate hub
+
+hub->mdb: get shared secret by JWT sessionKey
+activate mdb
+return
+
+hub->db: do some event activity via CQRS & EventSourceing
+activate db
+return
+
+return Message, HMAC(sharedSecret)
+return Response
+deactivate usr
+
+@enduml

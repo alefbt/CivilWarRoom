@@ -1,9 +1,6 @@
 const fs = require('fs')
-const util = require('util')
 const ks = require('key-store');
 const logger = require('./logger');
-const { log } = require('console');
-
 
 function createFileStore (filePath) {
   
@@ -29,15 +26,3 @@ exports.createFileStore = createFileStore
 exports.load = function(storePath){
   return createFileStore(storePath)
 }
-
-/*
-
-const store = createStore(saveFile, initialData)
-
-await store.saveKey('test-key', 'arbitrary password', { privateKey: 'super secret private key' })
-
-const { privateKey } = store.getPrivateKeyData('test-key', 'arbitrary password')
-
-console.log(`Stored private key: ${privateKey}`)
-console.log(`All stored keys' IDs: ${store.getKeyIDs().join(', ')}`)
-*/

@@ -9,11 +9,17 @@ export default {
   'back': 'חזור',
   'skip': 'דלג',
   'generate': 'חולל',
+  'pleaseWait': 'רק רגע...',
+  'noResults':'אין תוצאות',
   'validation':{
     'required field': 'שדה נדרש',
     'password should same': 'סיסמה צריכה להיות זהה'
   },
   'RegisterPage':{
+    'SuccessfulyRegistration':'הרשמה בוצעה בהצלחה',
+    'SuccessfulyRegistrationMessage':'כאת בצע הזדהות דרך מסך ההזדהות',
+    'KeysWarningTitle': 'זהירות! האם שמרת העתק של מפתחות?',
+    'KeysWarningMessage': ' לא יהיה ניתן לשחזרם אם תאבדם, האם להמשיך?',
     'SelectPassword': 'בחר סיסמה',
     'SelectAuthMethod': 'בחר שיטת הזדהות',
     'MethodPublicKey':'ע״י מפתחות הצפנה',
@@ -36,6 +42,9 @@ export default {
     'UI Name': 'שם הממשק'
   },
   'LoginPage':{
+    'SelectWarRoom': 'בחר חדר מלחמה ',
+    'WarRoom': 'חדר מלחמה',
+    'LoginDetails':'פרטי הזדהות',
     'Sign in':  'התחברות',
     'Sign in description': 'Sign in below to access your account',
     'email': 'כתובת מייל',

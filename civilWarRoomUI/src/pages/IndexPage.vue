@@ -13,7 +13,6 @@
 
 <script>
 import { defineComponent,inject,  ref, watch } from 'vue'
-import { useIdentityStore } from 'stores/identity-store';
 import { storeToRefs } from 'pinia';
 
 
@@ -21,13 +20,8 @@ export default defineComponent({
   name: 'IndexPage',
   setup () {
     const cbus = inject('bus')
-    const testName = ref("TEST 1")
 
-    cbus.on('some-event', (arg1) => {
-      // do some work
-      console.log("ON some-event:" + arg1)
-        testName.value = arg1
-      })
+   
     return {
     }
   }
