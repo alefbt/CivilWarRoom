@@ -1,4 +1,4 @@
-@startuml "Authenticate User (with Private Key) to hub via ui Process"
+@startuml "Auth Process Swimlanes - uthenticate User (with Private Key) to hub via ui Process"
 |User|
 
 start
