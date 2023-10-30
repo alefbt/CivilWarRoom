@@ -13,11 +13,10 @@ exports.mongooseSchema = new mongoose.Schema({
     isActive: {type: Boolean, default: false},
     srcEventSourceId:  { type: 'ObjectId', ref: eventSourceSchema.name },
     srcInventation: { type: String },
-    createdAt: { type: Date, default: Date.now },
     lastlogin: { type: Date, default: Date.now }
 
 
-})
+}, { timestamps: true })
 
 function getUser (appContext, userPuKfingerprint) {
   return new Promise(async (resolve,reject)=>{

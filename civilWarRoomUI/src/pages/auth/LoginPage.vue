@@ -187,6 +187,8 @@
             while(warroomOptionsArr.length>0)
               warroomOptionsArr.pop()
 
+              console.log(resp)
+
             for (var key in resp.availableWarRooms) {
               if (resp.availableWarRooms.hasOwnProperty(key)) { 
                 var value = resp.availableWarRooms[key];

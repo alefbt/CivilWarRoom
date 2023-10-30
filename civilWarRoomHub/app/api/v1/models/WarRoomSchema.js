@@ -16,9 +16,8 @@ exports.mongooseSchema = new mongoose.Schema({
   isActive: {type: Boolean, default: false},
   isPublic: {type: Boolean, default: true},
   srcInventation: { type: String },
-  createdAt: { type: Date, default: Date.now },
 
-});
+}, { timestamps: true });
 
   
 function createWarRoom (appContext, name, userPuKFingerprint) {
@@ -57,8 +56,20 @@ function getWarRoom (appContext, warRoomFingerprint) {
       const WarRoom = appContext.get(dataStoreUtils.appContextName).mongoModels[exports.name]
 
       resolve(await WarRoom.findOne({
-        warRoomFingerprint  
+        warroomPuKfingerprint: warRoomFingerprint,
+        isActive: true
       }))
+  })
+}
+
+function getPublicWarRooms (appContext) {
+  return new Promise(async (resolve,reject)=>{
+      const WarRoom = appContext.get(dataStoreUtils.appContextName).mongoModels[exports.name]
+
+      resolve(await WarRoom.find({
+        isPublic: true,
+        isActive: true
+      }).select('_id warroomPuKfingerprint name'))
   })
 }
 
@@ -66,4 +77,5 @@ function getWarRoom (appContext, warRoomFingerprint) {
   exports.registerDatastoreCommands = (appContext, dataStoreInst) => {
     dataStoreInst.getWarRoom = getWarRoom
     dataStoreInst.createWarRoom = createWarRoom
+    dataStoreInst.getPublicWarRooms = getPublicWarRooms
   }

@@ -112,21 +112,26 @@ function authResponseProcess(appContext, req, resp){
         )
 
     } else {
-        throw new Error("TBD - need implement on exisiting policy")
+        warroomFromDb = await dataStore.getWarRoom(appContext, sessionResponseMessage.selectedWarRoom.id)
+
+        if(!warroomFromDb.isActive)
+            return resp.status(404).send({
+                success: false, 
+                errorCode: "warrooms-not-available",
+                message:`WarRoom id : ${sessionResponseMessage.selectedWarRoom.id} not found or not active`})
+           
+        if(!warroomFromDb.isPublic)
+            throw new Error("TBD - need implement on exisiting policy")
+
+        // Complie permissions
+
+        //  If not user has permission to room
+        //       throw 401
+
+        // Check permissions
     }
 
-    // Complie permissions
 
-    //  If not user has permission to room
-    //       throw 401
-    
-
-
-
-    // Check permissions
-
-    // 
-        //TODO: Add issues, and other metadata
     const jwtToken =encTools.generateJWT({
         issuer:identity.name,
         displayName: usrFromDb.displayName,
@@ -135,10 +140,10 @@ function authResponseProcess(appContext, req, resp){
         warRoomFingerprint: warroomFromDb.warroomPuKfingerprint,
         warRoomName: warroomFromDb.name,
         dataHubFingerprint: identity.fingerprint,
-        roles: ['user']
+        roles: ['user'] //TODO : Set roles
     },jwtSecretPass)
     
-    console.log(jwtToken)
+
     const messageToEncrypt = {
         sessionKey: sessionResponseMessage.sessionKey,
         jwt: jwtToken,
@@ -163,8 +168,10 @@ function authResponseProcess(appContext, req, resp){
         sessionMessage: encMessage
     }
 
-    apiUtils.createPlainResponseObject(appContext,dataToSend).then( data=> {
+    apiUtils.createPlainResponseObject(appContext,dataToSend).then( async data=> {
         resp.send(data)
+        usrFromDb.lastlogin = new Date()
+        await usrFromDb.save()
     })
     
     // resp.send({status:"ok"})
@@ -206,10 +213,24 @@ function authRequestProcess(appContext, req, resp){
 
         let sessionKey = encTools.generateRandomKey()
 
+
+        // Get warrooms
+        const dataStore = await dataStoreUtils.getDataStore(appContext)
+       
+        // All public
+        var publicWarRooms = await dataStore.getPublicWarRooms(appContext)
+        var availableWarRooms  = {}
+        publicWarRooms.map(c=>{
+            availableWarRooms[`${c.warroomPuKfingerprint}`] = c.name
+        })
+        
+        // not public and has ACL
+        // TODO
+
         const messageToEncrypt = {
             sessionKey,
             hubPublicKey: identity.armoredPublicKey,
-            availableWarRooms: {} //TBD - add avalibole warrooms 'id':'name'
+            availableWarRooms
         }
 
         const toCache = {

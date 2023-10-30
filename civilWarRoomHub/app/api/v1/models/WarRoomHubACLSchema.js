@@ -31,8 +31,7 @@ exports.mongooseSchema = new mongoose.Schema({
   isActive: {type: Boolean, default: true},
   srcInventation: { type: String },
   srcEventSourceId:  { type: 'ObjectId', ref: eventSourceSchema.name },
-  createdAt: { type: Date, default: Date.now },
-  });
+  }, { timestamps: true });
 
   
   

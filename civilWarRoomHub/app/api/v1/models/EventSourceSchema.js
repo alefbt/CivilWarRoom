@@ -9,10 +9,9 @@ exports.mongooseSchema = new mongoose.Schema({
     warRoomId: String,
     userPuKfingerprint:String,
     data: Object,
-    timestamp: String,
     sourceJWT: String,
     corrolationId: String
-  });
+  }, { timestamps: true });
 
 exports.eventTypes = {
     TEST: "TEST",

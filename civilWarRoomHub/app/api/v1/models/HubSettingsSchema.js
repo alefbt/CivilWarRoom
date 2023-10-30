@@ -14,8 +14,7 @@ exports.mongooseSchema = new mongoose.Schema({
 
     isActive: {type: Boolean, default: false},
 
-    created_at: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 
 async function getOrCreateDataHubByIdentity(appContext, warroomhubIdentity ){
