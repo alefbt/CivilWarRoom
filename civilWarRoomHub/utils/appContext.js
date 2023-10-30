@@ -1,67 +1,82 @@
 
 const logger = require('./logger')
+
 const appContext = {
+    inited: false,
     objs: {}
 }
 
-logger.info('initiated appContext')
+if(!appContext.inited){
+    appContext.bootSquance = []
+    appContext._bootSquancePromises = []
 
-appContext.add = (name,obj) => {
-    appContext.objs[name] = obj
-    logger.debug(`Added "${name}" to context`)
+    appContext.postbootSquance = []
+    appContext._postbootSquancePromises = []
+
+    logger.info('initiated appContext')
+
+    appContext.set = appContext.add = (name,obj) => {
+        appContext.objs[name] = obj
+        logger.debug(`Setting "${name}" in context`)
+    }
+
+    appContext.get = (name) => {
+        return appContext.objs[name]
+    }
+
+
+
+    appContext.addBoot = (name, initFN) => {
+        logger.debug(`Adding to boot '${name}'`)
+        appContext.bootSquance.push( (resolve,reject)=>{ 
+            logger.debug(`Executing '${name}'`)
+            initFN(resolve, reject)
+        })
+    }
+
+    appContext.addPostBoot = (name, initFN) => {
+        logger.debug(`Adding to post-boot '${name}'`)
+        appContext.postbootSquance.push( (resolve,reject)=>{ 
+            logger.debug(`PostBoot Executing '${name}'`)
+            initFN(resolve, reject)
+        })
+    }
+
+    
+    appContext.boot = () => {
+        appContext.bootSquance.forEach( (__itmBootSeqFunc) => {
+            appContext._bootSquancePromises.push(new Promise( (fnResolve, fnReject)=>{
+                try{
+                    __itmBootSeqFunc(fnResolve, fnReject)
+                }catch(ex){
+                    logger.error(ex)
+                    fnReject(ex)
+                }
+            }))
+        })
+
+        return Promise.all(appContext._bootSquancePromises)
+    }
+
+    appContext.postboot = () => {
+        appContext.postbootSquance.forEach( (__itmBootSeqFunc) => {
+            appContext._postbootSquancePromises.push(new Promise( (fnResolve, fnReject)=>{
+                try{
+                    __itmBootSeqFunc(fnResolve, fnReject)
+                }catch(ex){
+                    logger.error(ex)
+                    fnReject(ex)
+                }
+            }))
+        })
+
+        return Promise.all(appContext._postbootSquancePromises)
+    }
+    appContext.inited = true
 }
 
-appContext.get = (name,obj) => {
-    return appContext.objs[name]
-}
 
 exports.getAppContext = () => {
     return appContext
 }
-
 exports.appContext = global.getAppContext = appContext
-
-
-
-
-// const boot = (appContext) => new Promise((resolve, reject) => {
-//     resolve(appContext)
-// })
-
-// function setContext(context) {
-//     global._appContext = appContext = context
-// }
-
-// function getAppContext() {
-//     return new Promise((resolve, reject) => {
-
-//         if(typeof appContext.loaded === 'undefined' || !appContext.loaded)
-//             if(typeof global._appContext !== 'undefined')
-//                 if(typeof global._appContext.loaded !== 'undefined' && global._appContext.loaded)
-//                     appContext = global._appContext
-                
-                    
-
-//         if(typeof global._appContext === 'undefined')
-//             global._appContext = appContext
-        
-
-//         if (global._appContext.loaded)
-//             return resolve(global._appContext)
-
-//         boot(global._appContext).then((ctx) => {
-//             setContext(ctx)
-//             resolve(ctx)
-//         });
-//     })
-// }
-
-
-// if (typeof global.getAppContext === 'function' && global.getAppContext) {
-//     // skip
-// } else {
-//     global.getAppContext = getAppContext;
-// }
-
-
-

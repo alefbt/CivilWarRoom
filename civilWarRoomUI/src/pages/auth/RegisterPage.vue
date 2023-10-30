@@ -200,7 +200,6 @@
   import { defineComponent,inject,  ref, watch, computed } from 'vue'
   import LanguageSwitch from 'components/LanguageSwitch.vue'
   import * as encryption from '../../utils/encryption'
-  import { useIdentityStore } from 'stores/identity-store'
   import { useWarRoomUiStore } from 'stores/warroomui-store'
   import { useWarRoomHubStore } from 'stores/warroomhub-store'
 

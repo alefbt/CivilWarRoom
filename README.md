@@ -1,6 +1,10 @@
 # CivilWarRoom
 A system that supports a state of war for civilian needs. Because of a war situation in Israel, the people of Israel unite and open war rooms to help each other in a war situation.
 
+## Imporant Links
+* Project board: https://github.com/users/alefbt/projects/1/views/1
+* Wiki: https://github.com/alefbt/CivilWarRoom/wiki
+
 # Quick start
 
 ## Build docker

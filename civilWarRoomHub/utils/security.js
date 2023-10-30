@@ -1,6 +1,5 @@
 
 const encTools = require('./encryption')
-
 const SECRETSTORE_JWT_SECRET_KEY="jwtsecretkey"
 
 var cached_jwt_passcode = ""

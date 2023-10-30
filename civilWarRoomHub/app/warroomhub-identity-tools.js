@@ -1,19 +1,18 @@
 
 const logger = require('../utils/logger')
 const fs = require('fs')
-const utilsTools = require('../utils/tools')
 const encTools = require('../utils/encryption')
-
-const warroomIdentity = {
+const dataStoreUtils = require('../utils/dataStore')
+const warroomhubIdentity = {
     initated: false
 }
 
-async function generateNewWarRoomCerticiate (appContext) {
-    logger.info("Geneating new WarRoom Certificates")
+async function generateNewWarRoomHubCerticiate (appContext) {
+    logger.info("Geneating new WarRoomHub Certificates")
 
     const keys = await encTools.generateKeys(
-        process.env.WARROOM_NAME,
-        process.env.WARROOM_EMAIL,
+        process.env.WARROOMHUB_NAME,
+        process.env.WARROOMHUB_EMAIL,
         process.env.WARROOMHUB_PRIVATE_KEY_SECRET
     )
 
@@ -21,13 +20,13 @@ async function generateNewWarRoomCerticiate (appContext) {
         process.env.WARROOMHUB_PUBLIC_KEY_FILE, 
         keys['publicKey'], 'utf8')
 
-    logger.info(`Saved new WarRoom Certificates`)
+    logger.info(`Saved new WarRoomHub Certificates`)
     
     appContext.get('keystore').saveKey('warroomhub', 
         process.env.KEYSTORE_SECRET, 
         { privateData: keys['privateKey'] })
     
-    logger.warn(`Geneated new WarRoom Certificates`)
+    logger.warn(`Geneated new WarRoomHub Certificates`)
 
     return keys
 }
@@ -45,25 +44,35 @@ async function getCertificates(appContext){
    return newKeys
 }
 
-async function setWarroomIdentity(armoredPublicKey, armoredPrivateKey){
+async function setWarroomHubIdentity(appContext, armoredPublicKey, armoredPrivateKey){
     const publicKey = await encTools.openpgpReadKey(armoredPublicKey)
     const privateKey = await encTools.openpgpDecryptPrivateKey(
         armoredPrivateKey,
         process.env.WARROOMHUB_PRIVATE_KEY_SECRET)
 
-    warroomIdentity['publicKey'] = publicKey
-    warroomIdentity['armoredPublicKey'] = armoredPublicKey
-    warroomIdentity['fingerprint'] =  publicKey.getFingerprint()
+    warroomhubIdentity['publicKey'] = publicKey
+    warroomhubIdentity['armoredPublicKey'] = armoredPublicKey
+    warroomhubIdentity['fingerprint'] =  await encTools.getPublicKeyFingerprint(publicKey)
 
 
-    warroomIdentity['privateKey'] = privateKey
-    warroomIdentity['armoredPrivateKey'] = armoredPrivateKey
+    warroomhubIdentity['privateKey'] = privateKey
+    warroomhubIdentity['armoredPrivateKey'] = armoredPrivateKey
     
-    warroomIdentity['name'] = publicKey.users.map((u)=>{ return u.userID.name}).join(',')
+    warroomhubIdentity['name'] =  await encTools.getPublicKeyName(publicKey) //publicKey.users.map((u)=>{ return u.userID.name}).join(',')
 
-    warroomIdentity['initated'] = true;
+    warroomhubIdentity['initated'] = true;
 
-    return warroomIdentity
+    const hubSettings = await appContext.get(dataStoreUtils.appContextName)
+    .getOrCreateDataHubByIdentity(appContext,warroomhubIdentity)
+
+    warroomhubIdentity['name'] = hubSettings.name
+    warroomhubIdentity['isActive'] = hubSettings.isActive
+    warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'] = hubSettings.allowCreateWarRoomsToRegisterdUsers
+    warroomhubIdentity['allowRegisterNewUsers'] = hubSettings.allowRegisterNewUsers
+
+    
+    return warroomhubIdentity
+
 }
 
 
@@ -73,29 +82,31 @@ const getIdentity = async (appContext) => new Promise((resolve,reject)=>{
 
 
     if( !fs.existsSync(filePath)) {
-        generateNewWarRoomCerticiate(appContext).then(async (newKeysGenerated)=>{
+        generateNewWarRoomHubCerticiate(appContext).then(async (newKeysGenerated)=>{
 
             getCertificates(appContext).then(async (newKeys)=>{
-                setWarroomIdentity(
+                setWarroomHubIdentity(
+                    appContext,
                     newKeys['publicKey'],
                     newKeys['privateKey'])
-                    .then((owarroomIdentity)=>{
-                        resolve(owarroomIdentity)
+                    .then((owrhubIdentity)=>{
+                        resolve(owrhubIdentity)
                     })
             })
         })
     }
-    else if (warroomIdentity['initated'] === true){
+    else if (warroomhubIdentity['initated'] === true){
         logger.debug(`Cached identity`)
-        return resolve(warroomIdentity)
+        return resolve(warroomhubIdentity)
     }
     else {
         getCertificates(appContext).then(async (newKeys)=>{
-            setWarroomIdentity(
+            setWarroomHubIdentity(
+                appContext,
                 newKeys['publicKey'],
                 newKeys['privateKey'])
-                .then((owarroomIdentity)=>{
-                    resolve(owarroomIdentity)
+                .then((owrhubIdentity)=>{
+                    resolve(owrhubIdentity)
                 })
         })
     }
@@ -122,6 +133,7 @@ exports.verifySign = async (appContext, publicKey, armoredSignature, objToVerify
         .catch(e=>reject(e))
 })
 
+exports.appContextName = 'warroomHubIdentity'
 
 exports.sign = async (appContext, data) => new Promise((resolve,reject)=>{
     getIdentity(appContext)

@@ -1,0 +1,25 @@
+@startuml "Auth Process Activity"
+
+actor       Actor       as usr
+participant UI          as ui
+participant Hub         as hub
+database    MemDB       as mdb
+database    Database    as db
+
+activate usr
+
+usr -> ui : write commnad or info and submit
+activate ui 
+ui  ->hub : UI signs with HMAC\nshared session secret key
+activate hub
+hub -> hub: validate request (HMAC)
+hub -> hub: Check ACL subject-resource
+hub -> hub: Create EventSourceMessage
+
+
+return
+return
+ 
+
+
+@enduml

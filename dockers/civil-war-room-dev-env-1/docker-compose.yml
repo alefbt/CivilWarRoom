@@ -1,59 +1,59 @@
 version: '2'
 
 services:
-  war-room-ui:
-    container_name: ui
-    platform: linux/amd64
-    build: ../NodeDevelopment
-    command: yarn run devDocker
-    volumes:
-      - ../../civilWarRoomUI:/usr/app/
-      - ui-node-modules:/usr/app/node_modules
-    ports:
-      - "9000:9000"
-    environment:
-      - DOCKER_DEFAULT_PLATFORM=linux/amd64
-      - PROXYUI_HUB_HOST=hub:8080
-    depends_on:
-      - war-room-hub
-
-    links:
-      - "war-room-hub:hub"
-
-  war-room-hub:
-    container_name: hub
-    build: ../NodeDevelopment
-    platform: linux/amd64
-    command: yarn run devDocker
-    volumes:
-      - ../../civilWarRoomHub:/usr/app/
-      - hub-node-modules:/usr/app/node_modules
-    ports:
-      - "8080:8080"
-    # networks:
-    #   - warroomnet
-    # depends_on:
-    #   - postgres
-    environment:
-      NODE_ENV: development
-      WARROOM_NAME: Dev War Room
-      WARROOM_EMAIL: dev@example.com
-      KEYSTORE_SECRET: devpassword
-      KEYSTORE_FILE: /usr/app/data/dev-secretstore.json
-      WARROOMHUB_PUBLIC_KEY_FILE: /usr/app/data/dev-publickey.pgp
-      WARROOMHUB_PRIVATE_KEY_SECRET: JBKJKH7sC
-
-  # mongodb:
-  #   image: mongo:latest
-  #   container_name: mongodb
-  #   environment:
-  #     -  'MONGODB_USER=user' 
-  #     -  'MONGODB_PASS=password!'
+  # war-room-ui:
+  #   container_name: ui
+  #   platform: linux/amd64
+  #   build: ../NodeDevelopment
+  #   command: yarn run devDocker
   #   volumes:
-  #     - 'mongodb-data:/data/db'
+  #     - ../../civilWarRoomUI:/usr/app/
+  #     - ui-node-modules:/usr/app/node_modules
   #   ports:
-  #     - '27017:27017'
-  #   command: mongod
+  #     - "9000:9000"
+  #   environment:
+  #     - DOCKER_DEFAULT_PLATFORM=linux/amd64
+  #     - PROXYUI_HUB_HOST=hub:8080
+  #   depends_on:
+  #     - war-room-hub
+
+  #   links:
+  #     - "war-room-hub:hub"
+
+  # war-room-hub:
+  #   container_name: hub
+  #   build: ../NodeDevelopment
+  #   platform: linux/amd64
+  #   command: yarn run devDocker
+  #   volumes:
+  #     - ../../civilWarRoomHub:/usr/app/
+  #     - hub-node-modules:/usr/app/node_modules
+  #   ports:
+  #     - "8080:8080"
+  #   # networks:
+  #   #   - warroomnet
+  #   # depends_on:
+  #   #   - postgres
+  #   environment:
+  #     NODE_ENV: development
+  #     WARROOM_NAME: Dev War Room
+  #     WARROOM_EMAIL: dev@example.com
+  #     KEYSTORE_SECRET: devpassword
+  #     KEYSTORE_FILE: /usr/app/data/dev-secretstore.json
+  #     WARROOMHUB_PUBLIC_KEY_FILE: /usr/app/data/dev-publickey.pgp
+  #     WARROOMHUB_PRIVATE_KEY_SECRET: JBKJKH7sC
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      -  'MONGODB_USER=user' 
+      -  'MONGODB_PASS=passwwd'
+    volumes:
+      - 'mongodb-data:/data/db'
+    ports:
+      - '27017:27017'
+    command: mongod
   # rabbitmq:
   #   image: 'rabbitmq:3-management'
   #   container_name: rabbitmq
@@ -72,20 +72,22 @@ services:
   #     #- './enabled_plugins:/etc/rabbitmq/enabled_plugins'
   #     #- './rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro'
   #     #- './autocluster-0.4.1.ez:/usr/lib/rabbitmq/lib/rabbitmq_server-3.5.5/plugins/autocluster-0.4.1.ez'
-  # cache:
-  #   image: redis:6.2-alpine
-  #   restart: always
-  #   ports:
-  #     - '6379:6379'
-  #   command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-  #   volumes: 
-  #     - cache:/data
+  redis:
+    container_name: redis
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    # --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    command: redis-server --save 20 1 --loglevel warning 
+    volumes: 
+      - redis:/data
 
 volumes:
   ui-node-modules: {}
   hub-node-modules: {}
   mongodb-data: {}
-  cache:
+  redis:
     driver: local
 
 networks:

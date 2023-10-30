@@ -4,108 +4,147 @@ const appContext = require('./utils/appContext').getAppContext()
 const packageConfig = require('./package.json')
 logger.info("Starting server of War Room Hub")
 
-// Use `.env` config when the NODE_ENV is other than production
-if (process.env.NODE_ENV !== 'production') {
-  logger.warn("development mode")
-  dotenv.config();
-}
 
+appContext.addBoot("Add global vars", (resolve, reject) => {
+  
+  // Use `.env` config when the NODE_ENV is other than production
+  if (process.env.NODE_ENV !== 'production') {
+    logger.warn("development mode")
+    dotenv.config();
+  }
 
-appContext.add('envvar', process.env)
-appContext.add('packageConfig', packageConfig)
+  appContext.add('envvar', process.env)
+  appContext.add('packageConfig', packageConfig)
 
-const cache = require('./utils/cache')
-appContext.add('cache', cache)
-
-// Boot keystore
-const secretstore = require('./utils/keystore').load(process.env.KEYSTORE_FILE);
-appContext.add('keystore', secretstore)
-
-// Verify if GPG Hub exists
-const warroomIdentity = require('./app/war-room-identity-tools')
-warroomIdentity.getIdentity(appContext).then((wridentity)=>{
-  appContext.add('warroomIdentity', wridentity)
-  logger.info(`!## War Room Name : _${wridentity.name}_`)
-  logger.info(`!## War Room certificate fingertprint : ${wridentity.fingerprint}`)
+  resolve()
 })
 
+appContext.addBoot("Add Cache context", (resolve, reject) => {
+  
+  const cache = require('./utils/cache')
+  appContext.add('cache', cache)
 
-const express = require('express')
-const serveStatic = require('serve-static')
-
-const app = express()
-
-// Security
-const encTools = require('./utils/encryption')
-var { expressjwt: jwt } = require("express-jwt");
-
-const securityTool = require('./utils/security')
-
-app.use(
-  jwt({
-    secret: securityTool.getJWTSecretKey(appContext),
-    algorithms: ["HS256"],
-  }).unless({ path: [
-    "/hub/api/v1/auth",
-    "/hub/api/v1/info",
-    "/echo"
-  ] })
-);
-
-
-
-
-const helmet = require('helmet')
-app.use(helmet())
-app.disable('x-powered-by')
-
-
-
-// General
-app.use(serveStatic("./public"))
-app.use(express.json());
-const port = process.env.PORT || 8080
-
-appContext.add('expressApp', app)
-
-
-app.use((req, res, next) => {
-
-  if(logger.isDebugEnabled)
-    logger.debug(`Request url : ${req.url}`)
-
-  next()
+  resolve()
 })
 
-const wrApi1Routes = require('./app/api/v1')
-wrApi1Routes.attachRouter(appContext, app)
+appContext.addBoot("Add KeyStore to context", (resolve, reject) => {
+  // Boot keystore
+  const keystoreUtil = require('./utils/keystore')
+  appContext.add(keystoreUtil.appContextName, keystoreUtil.load(process.env.KEYSTORE_FILE))
 
-
-app.get('/', (req, res) => {
-  res.send('Hello World!')
+  resolve()
 })
 
-app.get('/echo', (req, res) => {
-  console.log(req.body);      // your JSON
-  res.send(req.body);    // echo the result back
+appContext.addBoot("Add DataStore service and models to context", (resolve,reject)=>{
+  const datastore = require('./utils/dataStore')
+  appContext.add("dataStoreUtils", datastore)
+
+  datastore.init(appContext).then((f)=>{
+    appContext.add(datastore.appContextName, f)
+    resolve()
+  })
+
 })
 
 
 
-// custom 404
-app.use((req, res, next) => {
-  res.status(404).send({success:false, message:"Sorry can't find that!"})
+appContext.addBoot("Add WebServer", (resolve,reject)=>{
+  const express = require('express')
+  const serveStatic = require('serve-static')
+
+  const app = express()
+
+  // Security
+  var { expressjwt: jwt } = require("express-jwt");
+
+  const securityTool = require('./utils/security')
+
+  app.use(
+    jwt({
+      secret: securityTool.getJWTSecretKey(appContext),
+      algorithms: ["HS256"],
+    }).unless({ path: [
+      "/hub/api/v1/auth",
+      "/hub/api/v1/info",
+      "/echo"
+    ] })
+  );
+
+
+  const helmet = require('helmet')
+  app.use(helmet())
+  app.disable('x-powered-by')
+
+
+
+  // General
+  app.use(serveStatic("./public"))
+  app.use(express.json());
+  const port = process.env.PORT || 8080
+
+  appContext.add('expressApp', app)
+
+
+  app.use((req, res, next) => {
+    if(logger.isDebugEnabled)
+      logger.debug(`Request url : ${req.url}`)
+
+    next()
+  })
+
+  const wrApi1Routes = require('./app/api/v1')
+  wrApi1Routes.attachRouter(appContext, app)
+
+
+  app.get('/', (req, res) => {
+    res.send('Hub!')
+  })
+
+  app.get('/echo', (req, res) => {
+    console.log(req.body);      // your JSON
+    res.send(req.body);    // echo the result back
+  })
+
+  // custom 404
+  app.use((req, res, next) => {
+    res.status(404).send({success:false, message:"Sorry can't find that!"})
+  })
+
+  // custom error handler
+  app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).send({success:false, message:'Something broke!'})
+  })
+
+  app.listen(port, () => {
+    logger.info(`Started listening on port ${port}`);
+    resolve()
+  })
 })
 
-// custom error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack)
-  res.status(500).send({success:false, message:'Something broke!'})
+
+appContext.addPostBoot("Add HubIdentity", (resolve, reject) => {
+  const hubIdentity = require('./app/warroomhub-identity-tools')
+  
+  hubIdentity.getIdentity(appContext).then((wridentity)=>{
+    appContext.add(hubIdentity.appContextName, wridentity)
+    logger.info(`!## War Room Name : _${wridentity.name}_`)
+    logger.info(`!## War Room certificate fingertprint : ${wridentity.fingerprint}`)
+  })
+  resolve()
 })
 
-app.listen(port, () => {
-  logger.info(`Started listening on port ${port}`);
+
+appContext.boot().then( () => {
+  logger.debug("Boot success.")
+  appContext.postboot().then( () => {
+    logger.debug("PostBoot success.")
+    logger.info("Boot success. finished loading")
+  })
 })
+
+
+
 
 
 

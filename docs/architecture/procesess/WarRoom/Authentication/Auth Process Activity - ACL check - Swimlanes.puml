@@ -1,0 +1,43 @@
+@startuml "Authenticate User to hub via ui"
+
+|User|
+start
+:Login;
+|UI|
+:proxy;
+|Hub|
+:Execute Login;
+:Compile ACLs and cache;
+|MemDB|
+:Save compiled ACLs;
+|Hub|
+:Continue login squance;
+stop
+
+|User|
+start
+:Do some action,\nSubmit Message;
+|UI|
+:Proxy;
+|Hub|
+:Validate request HMAC;
+
+if (Exists compile acl on memdb) then (exists)
+
+else (not exists)
+|Hub|
+:Compile ACLs;
+|MemDB|
+:Store in MemDB;
+endif
+|Hub|
+:Get from MemDB;
+
+if (ACL exists? and Permission allows?) then (allow)
+    :Store in EventSource;
+else (deny)
+    :Return Permission deny;
+endif
+
+stop
+@enduml
