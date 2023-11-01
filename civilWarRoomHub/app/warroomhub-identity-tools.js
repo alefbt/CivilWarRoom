@@ -58,17 +58,22 @@ async function setWarroomHubIdentity(appContext, armoredPublicKey, armoredPrivat
     warroomhubIdentity['privateKey'] = privateKey
     warroomhubIdentity['armoredPrivateKey'] = armoredPrivateKey
     
+    // DEFAULT VALUES
     warroomhubIdentity['name'] =  await encTools.getPublicKeyName(publicKey) //publicKey.users.map((u)=>{ return u.userID.name}).join(',')
-
+    warroomhubIdentity['isActive'] = true
+    warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'] = true
+    warroomhubIdentity['allowRegisterNewUsers'] = true
     warroomhubIdentity['initated'] = true;
 
-    const hubSettings = await appContext.get(dataStoreUtils.appContextName)
-    .getOrCreateDataHubByIdentity(appContext,warroomhubIdentity)
+    // Overwrite if exist value
+    const hubSettings = await require('./api/v1/models/HubSettingsModel').getHubSettingsByIdentity(appContext,warroomhubIdentity)
 
-    warroomhubIdentity['name'] = hubSettings.name
-    warroomhubIdentity['isActive'] = hubSettings.isActive
-    warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'] = hubSettings.allowCreateWarRoomsToRegisterdUsers
-    warroomhubIdentity['allowRegisterNewUsers'] = hubSettings.allowRegisterNewUsers
+    if(hubSettings){
+        warroomhubIdentity['name'] = hubSettings.name
+        warroomhubIdentity['isActive'] = hubSettings.isActive
+        warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'] = hubSettings.allowCreateWarRoomsToRegisterdUsers
+        warroomhubIdentity['allowRegisterNewUsers'] = hubSettings.allowRegisterNewUsers    
+    }
 
     
     return warroomhubIdentity

@@ -1,12 +1,11 @@
-const mongoose = require('mongoose');
 const logger = require('./logger');
 const  redis = require('redis');
 const encryptionUtils = require('./encryption')
-
+const { MongoClient } = require("mongodb");
 const warroomhubIdentityTools = require('../app/warroomhub-identity-tools')
 
-const eventSourceSchema = require('../app/api/v1/models/EventSourceSchema')
-const hubSettingsSchema = require('../app/api/v1/models/HubSettingsSchema')
+// const eventSourceSchema = require('../app/api/v1/models/EventSourceSchema')
+// const hubSettingsSchema = require('../app/api/v1/models/HubSettingsSchema')
 
 exports.appContextName = "dataStore"
 
@@ -16,8 +15,6 @@ const dataStore = {
     initiated: false,
     redisInstance: null,
     mongooseInstance: null,
-    mongoModels: {},
-    mongoSchemas: {},
     cmd: {}
 }
 
@@ -107,33 +104,18 @@ exports.init = async (appContext) => {
     logger.debug("initing dataStore")
     const datastoreUri = appContext.get("envvar").DATASTORE
     logger.debug("initing mongo instance...")
-    dataStore.mongooseInstance = await mongoose.connect(datastoreUri);
-    logger.debug("done initing mongo instance")
 
+    dataStore.mongoInstance = new MongoClient(datastoreUri)
+
+    logger.debug("done initing mongo instance")
+    dataStore.mongoDBInstance = dataStore.mongoInstance.db(appContext.get("envvar").DATASTORE_DB)
 
     // init models
 
 
-    if(!dataStore.mongoModels)
-        dataStore.mongoModels = {}
-
-    if(!dataStore.mongoSchemas)
-        dataStore.mongoSchemas = {}
-
-    const addSchema = (_schema) => {
-        dataStore.mongoSchemas[_schema.name] = _schema.mongooseSchema
-
-        if(_schema.registerIndexes)
-            _schema.registerIndexes(appContext, _schema.mongooseSchema)
-
-        dataStore.mongoModels[_schema.name] = dataStore.mongooseInstance.model(
-            _schema.name, 
-            _schema.mongooseSchema)    
-
-
-
-        if(_schema.registerDatastoreCommands)
-            _schema.registerDatastoreCommands(appContext, dataStore)
+     const addSchema = (_schema) => {
+         if(_schema.registerDatastoreCommands)
+             _schema.registerDatastoreCommands(appContext, dataStore)
     }
 
     /*
@@ -141,11 +123,18 @@ exports.init = async (appContext) => {
     /// ADD SCHEMAS
     ///
     */
-    addSchema(eventSourceSchema)
-    addSchema(hubSettingsSchema)
-    addSchema(require('../app/api/v1/models/UserSchema'))
-    addSchema(require('../app/api/v1/models/WarRoomSchema'))
-    addSchema(require('../app/api/v1/models/WarRoomHubACLSchema'))
+
+    
+    addSchema(require('../app/api/v1/models/HubSettingsModel'))
+    addSchema(require('../app/api/v1/models/WarRoomModel'))
+    addSchema(require('../app/api/v1/models/UserModel'))
+
+
+    // addSchema(eventSourceSchema)
+    // addSchema(hubSettingsSchema)
+    // addSchema(require('../app/api/v1/models/UserSchema'))
+    // addSchema(require('../app/api/v1/models/WarRoomSchema'))
+    // addSchema(require('../app/api/v1/models/WarRoomHubACLSchema'))
 
     //await init_commands(dataStore, appContext)
 

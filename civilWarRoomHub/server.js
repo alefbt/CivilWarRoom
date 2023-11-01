@@ -47,6 +47,15 @@ appContext.addBoot("Add DataStore service and models to context", (resolve,rejec
 })
 
 
+appContext.addBoot("Add RpcServices to context", (resolve,reject)=>{
+  const rpcServices = require('./utils/rpcService')
+
+  rpcServices.initAppContext(appContext).then((f)=>{
+    appContext.add(rpcServices.appContextName, f)
+    resolve()
+  })
+})
+
 
 appContext.addBoot("Add WebServer", (resolve,reject)=>{
   const express = require('express')
@@ -137,10 +146,18 @@ appContext.addPostBoot("Add HubIdentity", (resolve, reject) => {
 
 appContext.boot().then( () => {
   logger.debug("Boot success.")
+
   appContext.postboot().then( () => {
     logger.debug("PostBoot success.")
-    logger.info("Boot success. finished loading")
-  })
+
+    const rtest = require('./app/api/v1/services/RpcUserService')
+    for(var i = 0 ; i < 1 ; i++ )
+      rtest.fib(appContext,20).then(r=>{
+        console.log("WORKS!",r)
+      }).catch(f=>{
+        console.log("ERROR",f)})
+      logger.info("Boot success. finished loading")      
+    })
 })
 
 

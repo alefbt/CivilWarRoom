@@ -55,8 +55,11 @@ function authResponseProcess(appContext, req, resp){
     // Register User?
     const userFP = await encTools.getPublicKeyFingerprint(authReqCachedObj.userPublicKey)
     const dataStore = await dataStoreUtils.getDataStore(appContext)
-    var usrFromDb = await dataStore.getUser(appContext,userFP)
+
     
+//    var usrFromDb = await dataStore.getUser(appContext,userFP)
+    var usrFromDb = await require('./models/UserModel').getActiveUser(appContext,userFP)
+
     if(!usrFromDb)
         if(!identity.allowRegisterNewUsers)  {
             // If allowed register new users
@@ -122,6 +125,9 @@ function authResponseProcess(appContext, req, resp){
            
         if(!warroomFromDb.isPublic)
             throw new Error("TBD - need implement on exisiting policy")
+
+        // build groups
+        // build roles
 
         // Complie permissions
 
@@ -212,18 +218,20 @@ function authRequestProcess(appContext, req, resp){
     warroomhuvIdentityTools.getIdentity(appContext).then(async identity => {
 
         let sessionKey = encTools.generateRandomKey()
-
-
-        // Get warrooms
-        const dataStore = await dataStoreUtils.getDataStore(appContext)
        
         // All public
-        var publicWarRooms = await dataStore.getPublicWarRooms(appContext)
+        // var publicWarRooms = await dataStore.getPublicWarRooms(appContext)
+
+        const publicWarRooms = await require('./models/WarRoomModel').getActivePublicWarRooms(appContext)
+
+
         var availableWarRooms  = {}
-        publicWarRooms.map(c=>{
-            availableWarRooms[`${c.warroomPuKfingerprint}`] = c.name
-        })
+        if(publicWarRooms)
+            publicWarRooms.map(c=>{
+                availableWarRooms[`${c.warroomPuKfingerprint}`] = c.name
+            })
         
+
         // not public and has ACL
         // TODO
 

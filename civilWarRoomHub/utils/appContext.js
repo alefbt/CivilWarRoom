@@ -1,5 +1,6 @@
 
 const logger = require('./logger')
+const EventEmitter = require('node:events');
 
 const appContext = {
     inited: false,
@@ -12,7 +13,8 @@ if(!appContext.inited){
 
     appContext.postbootSquance = []
     appContext._postbootSquancePromises = []
-
+    appContext.events = new EventEmitter()
+    
     logger.info('initiated appContext')
 
     appContext.set = appContext.add = (name,obj) => {
