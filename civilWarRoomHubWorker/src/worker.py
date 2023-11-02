@@ -5,6 +5,7 @@ from cwrhubworker.RPCHandler import RPCHandler
 from dotenv import dotenv_values
 import logging
 import logging.config
+from cwrhubworker.services.ArchiveService import ArchiveService
 
 from cwrhubworker.services.FibService import FibService
 
@@ -38,6 +39,8 @@ async def main():
     rpc = RPCHandler(config)
 
     await FibService().add_funcs(rpc)
+    await ArchiveService().add_funcs(rpc)
+
 
     #await rpc.addServiceFunction("rpc-test-service","fib-func", fib)
     await rpc.run()

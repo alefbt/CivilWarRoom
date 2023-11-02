@@ -2,26 +2,14 @@
 import logging
 
 from cwrhubworker.RPCHandler import InRpcMessage, ResponseRpcMessage
+from cwrhubworker.services.BaseService import BaseService
 
 log = logging.getLogger(__name__)
 
-class FibService ():
-
-    def __init__(self) -> None:
-        log.debug(f"initing service {self.__class__.__name__}")
-        self.service_name = self.__class__.__name__
-
-    def get_func_name(self, f):
-        return self.fib.__qualname__.split(".")[1]
-    
-    async def add_funcs_wrp(self,rpc,fn):
-        log.debug(f"adding function {self.__class__.__name__}.{self.get_func_name(fn)}")
-        return await rpc.add_service_function(self.service_name, self.get_func_name(fn), fn)
-
+class FibService (BaseService):
     async def add_funcs(self,rpc):
-        await self.add_funcs_wrp(rpc,self.fib)
+        await self._add_func(rpc,self.fib)
 
-        
     async def fib(self, inmsg: InRpcMessage) -> ResponseRpcMessage:
         log.debug(inmsg)
 
@@ -38,7 +26,6 @@ class FibService ():
 
         return ResponseRpcMessage(inmsg, outmsg)
     
-
     async def _fib(self, n: int) -> int:
         if n == 0:
             return 0

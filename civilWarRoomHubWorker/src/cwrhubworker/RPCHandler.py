@@ -116,7 +116,7 @@ class RPCHandler:
 
     async def __start_background_task(self, channel, func):
         log.debug("Start background task")
-        task = asyncio.create_task(func(channel))
+        task = asyncio.create_task(func(self, channel))
         await task
 
     async def add_service_function(self,serviceName,serviceFunctionName, func):
