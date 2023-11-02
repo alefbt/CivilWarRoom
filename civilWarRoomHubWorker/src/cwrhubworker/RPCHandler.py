@@ -4,7 +4,10 @@ from aio_pika.abc import AbstractIncomingMessage
 from aio_pika import ExchangeType
 import asyncio
 
+from bson import Timestamp
+
 from cwrhubworker import Utils
+from cwrhubworker.stores.ContextStore import ContextStore
 
 log = logging.getLogger(__name__)
 
@@ -26,26 +29,62 @@ class ResponseRpcMessage:
         return str(Utils.obj_to_json(self.content)).encode()
 
 class InRpcMessage:
-    def __init__(self, headers, content) -> None:
-        self.headers = headers
-        self.content = content
+    def __init__(self, in_msg: AbstractIncomingMessage) -> None:
+        self.headers = in_msg.headers
+        
+        self.content = in_msg.body.decode()
+
+        self.msg = in_msg
+        self.unique_msg_id = in_msg.headers['messageUniqueId']
+        self.contentType = in_msg.headers['_contentType']
+        self.sourceJwt = in_msg.headers['_jwt'] 
+        self.sourceUser = in_msg.headers['_user']
+        self.uiFingerprint = in_msg.headers['uiFingerprint']
+        self.hubFingerprint = in_msg.headers['hubFingerprint']
+        self.sourceUserInfo = in_msg.headers['_userInfo'] 
+
+    def to_event_source_object(self):
+        
+        return {
+            "@version":"eventsource#v1i",
+            "sourceUser": self.sourceUser,
+            "sourceUserInfo": self.sourceUserInfo,
+            "uiFingerprint": self.uiFingerprint,
+            "hubFingerprint":self.hubFingerprint,
+            "amqMessageId": self.msg.message_id,
+            "uniqueMessageId": self.unique_msg_id,
+            "originalJwt":self.sourceJwt,
+            "timestamp": self.msg.timestamp,
+            "dataContentType":self.contentType,
+            "dataHeaders": self.headers,
+            "dataContent": self.get_content()
+        }
     
     def get_content(self):
         out = self.content # assuming the default is text/plain
 
-        if('_contentType' in self.headers and self.headers['_contentType'] == "application/json"):
-            out = Utils.json_to_obj(self.content)
+        match self.contentType:
+            case "application/json":
+                out = Utils.json_to_obj(self.content)
 
+            #already decleard
+            #case "plain/text":
+            #    out = self.content
+            case _:
+                pass
+
+        
         return out
 
 
 class RPCHandler:
-    def __init__(self,config) -> None:
+    def __init__(self,context: ContextStore) -> None:
         log.debug("initing...")
-        self.config = config
+        self.context = context
         self.serviceFunctions = {}
         self.background_jobs = []
-        
+
+
     async def __init_channel_definitions(self, channel):
         # EventSource (exchangeHub)
         self.eventsourceExchange = await channel.declare_exchange('hub-eventsource', ExchangeType.FANOUT)
@@ -99,7 +138,8 @@ class RPCHandler:
 
                         execution_function = self.serviceFunctions[serviceFuncName]["func"]
                         # functionParam
-                        funcParam =  InRpcMessage(message.headers, messageBody)
+                        # funcParam =  InRpcMessage(message.headers, messageBody)
+                        funcParam =  InRpcMessage(message)
                         task = asyncio.create_task(execution_function(funcParam))
                         outrpc_msg = await task
                         await self.exchangeDefault.publish(
@@ -133,7 +173,7 @@ class RPCHandler:
     async def run(self):
         logging.info("starting")
         # Perform connection
-        connection = await connect(self.config['AMQ_CONNECTION'])
+        connection = await connect(self.context.get('config')['AMQ_CONNECTION'])
 
         async with connection:
             # Creating a channel

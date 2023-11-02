@@ -8,6 +8,8 @@ import logging.config
 from cwrhubworker.services.ArchiveService import ArchiveService
 
 from cwrhubworker.services.FibService import FibService
+from cwrhubworker.stores.ContextStore import ContextStore
+from cwrhubworker.stores.DocumentStore import DocumentStore
 
 logging.getLogger("aio_pika.connection").setLevel(logging.WARNING)
 logging.getLogger("aio_pika.queue").setLevel(logging.WARNING)
@@ -33,21 +35,33 @@ log = logging.getLogger(__name__)
 async def main():
     log.info("Starting worker")
 
+    context = ContextStore()
+
     config = dotenv_values(".env")
-    
-    log.debug(config)
-    rpc = RPCHandler(config)
-
-    await FibService().add_funcs(rpc)
-    await ArchiveService().add_funcs(rpc)
+    context.set("config",config)
 
 
-    #await rpc.addServiceFunction("rpc-test-service","fib-func", fib)
+
+    rpc = RPCHandler(context)
+
+    # init mongo
+    docstore = DocumentStore(context)
+    log.debug(f" hhhhhhhhh {DocumentStore.__name__}")
+    context.set(DocumentStore.__name__,docstore)
+
+    await docstore.ping()
+
+    # init redis
+    redis_inst ={}
+    context.set('redis',redis_inst)
+
+    await FibService(context).add_funcs(rpc)
+    await ArchiveService(context).add_funcs(rpc)
+
+
     await rpc.run()
 
-
-    #Assuming that worker should always work
-    log.error("Worker stopped")
+    log.warn("main:Worker has stopped")
 
 if __name__ == "__main__":
     asyncio.run(main())

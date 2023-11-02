@@ -1,11 +1,14 @@
 import logging
 
+from cwrhubworker.stores.ContextStore import ContextStore
+
 log = logging.getLogger(__name__)
 
 class BaseService:
-    def __init__(self) -> None:
+    def __init__(self, context: ContextStore) -> None:
         log.debug(f"initing service {self.__class__.__name__}")
         self.service_name = self.__class__.__name__
+        self.context = context
 
     def _get_func_name(self, f):
         return f.__qualname__.split(".")[1]

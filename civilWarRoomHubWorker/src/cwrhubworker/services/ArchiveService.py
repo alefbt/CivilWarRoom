@@ -1,11 +1,13 @@
 
 import logging
+from uu import Error
 
 from aio_pika import Channel
 from aio_pika.abc import AbstractIncomingMessage
 
-from cwrhubworker.RPCHandler import InRpcMessage, RPCHandler, ResponseRpcMessage
+from cwrhubworker.RPCHandler import InRpcMessage, RPCHandler
 from cwrhubworker.services.BaseService import BaseService
+from cwrhubworker.stores.DocumentStore import getDocumentStoreFromContext
 
 log = logging.getLogger(__name__)
 
@@ -20,10 +22,14 @@ class ArchiveService (BaseService):
             message: AbstractIncomingMessage
             async for message in qiterator:
                 try:
-                    async with message.process(requeue=False):
-                        messageBody = message.body.decode()
-                        # TODO Save as Eventsource on mongo
-                        log.debug(f" [.] Archive {messageBody}") 
+                    inrpcmsgR = InRpcMessage(message)
+
+                    log.debug(f" [.] Archive {inrpcmsgR.unique_msg_id} to Store")
+                    await getDocumentStoreFromContext(self.context).store_eventsource(inrpcmsgR)
+
+                    await message.ack()
+                    log.debug(f" [.] Archive ACK {inrpcmsgR.unique_msg_id}")
+
                 except Exception:
                     logging.exception("Processing error for message %r", message)
         
