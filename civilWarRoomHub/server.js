@@ -152,7 +152,7 @@ appContext.boot().then( () => {
 
     const rtest = require('./app/api/v1/services/RpcUserService')
     for(var i = 0 ; i < 1 ; i++ )
-      rtest.fib(appContext,20).then(r=>{
+      rtest.fib(appContext,19).then(r=>{
         console.log("WORKS!",r)
       }).catch(f=>{
         console.log("ERROR",f)})

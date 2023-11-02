@@ -48,8 +48,13 @@ async function _exec_serive_func(appContext,
                 });
             
                 
-                var dataToSend = ""
-                
+                var contentType = ""
+                var dataToSend = param
+
+                if (typeof dataToSend == 'function'){
+                    param = param()
+                }
+
                 switch(typeof param){
                     case 'undefined':
                         dataToSend=""
@@ -58,15 +63,17 @@ async function _exec_serive_func(appContext,
                     case 'array':
                     case 'object':
                         dataToSend = JSON.stringify(obj).toString('utf-8')
+                        contentType="application/json"
                         break
-                    case 'function':
-                        dataToSend = param()
-                        break
+
                     case 'number':
                     default:
                         dataToSend = param.toString()
+                        contentType="text/plain"
                     
                 }
+
+
 
                 channel.publish(
                     'hub-eventsource', // exchange
@@ -76,7 +83,9 @@ async function _exec_serive_func(appContext,
                         correlationId: correlationId,
                         replyTo: q.queue,
                         headers: {
-                            HubRPC:	`${rpcServiceName}.${funcName}`
+                            HubRPC:	`${rpcServiceName}.${funcName}`,
+                            _messageVersion: "1-init",
+                            _contentType: contentType
                         }
                     }
                 );
