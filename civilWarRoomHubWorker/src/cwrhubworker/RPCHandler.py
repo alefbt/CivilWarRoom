@@ -4,16 +4,49 @@ from aio_pika.abc import AbstractIncomingMessage
 from aio_pika import ExchangeType
 import asyncio
 
+from cwrhubworker import Utils
 
 log = logging.getLogger(__name__)
+
+class ResponseRpcMessage:
+    def __init__(self, inrpc_message,  content) -> None:
+        self.content = content
+        self.inrpc_message = inrpc_message
+
+    def get_headers(self):
+        return {
+            "_messageVersion": "1-init",
+            "_contentType": "application/json"
+        }
+    
+    def get_content(self):
+        return self.content
+    
+    def get_message_body(self):
+        return str(Utils.obj_to_json(self.content)).encode()
+
+class InRpcMessage:
+    def __init__(self, headers, content) -> None:
+        self.headers = headers
+        self.content = content
+    
+    def get_content(self):
+        out = self.content # assuming the default is text/plain
+
+        if('_contentType' in self.headers and self.headers['_contentType'] == "application/json"):
+            out = Utils.json_to_obj(self.content)
+
+        return out
+
 
 class RPCHandler:
     def __init__(self,config) -> None:
         log.debug("initing...")
         self.config = config
         self.serviceFunctions = {}
+        self.background_jobs = []
         
-    async def init_channel_definitions(self, channel):
+    async def __init_channel_definitions(self, channel):
         # EventSource (exchangeHub)
         self.eventsourceExchange = await channel.declare_exchange('hub-eventsource', ExchangeType.FANOUT)
         
@@ -33,16 +66,10 @@ class RPCHandler:
             "",arguments={
                 'x-match': 'any',
             })
+        
+        await self.__create_service_function_queues(channel)
 
-    async def addServiceFunction(self,serviceName,serviceFunctionName, func):
-        cHubRPC = f"{serviceName}.{serviceFunctionName}"
-        self.serviceFunctions[cHubRPC] = {
-            "name": cHubRPC,
-            "func": func,
-            "q": {}
-        }
-
-    async def create_service_function_queues(self, channel):
+    async def __create_service_function_queues(self, channel):
         for n in self.serviceFunctions:
             queue = await channel.declare_queue(f"hub-eventsource-exec@{n}")
 
@@ -55,7 +82,7 @@ class RPCHandler:
             
             self.serviceFunctions[n]['q'] = queue
 
-    async def start_listen(self, serviceFuncName):
+    async def __start_rpc_listen(self, serviceFuncName):
         log.info(f"Start listen to queue {serviceFuncName}")
 
         async with self.serviceFunctions[serviceFuncName]["q"].iterator() as qiterator:
@@ -64,19 +91,22 @@ class RPCHandler:
                 try:
                     async with message.process(requeue=False):
                         assert message.reply_to is not None
-                        n = int(message.body.decode())
 
-                        log.debug(f" [.] fib({n}) to {message.reply_to}")
+                        messageBody = message.body.decode()
+                        functionParam = messageBody
 
+                        log.debug(f" [.] fib({functionParam}) to {message.reply_to}") 
 
-                        fu = self.serviceFunctions[serviceFuncName]["func"]
-                        task = asyncio.create_task(fu(n))
-                        response = str(await task).encode()
-
+                        execution_function = self.serviceFunctions[serviceFuncName]["func"]
+                        # functionParam
+                        funcParam =  InRpcMessage(message.headers, messageBody)
+                        task = asyncio.create_task(execution_function(funcParam))
+                        outrpc_msg = await task
                         await self.exchangeDefault.publish(
                             Message(
-                                body=response,
+                                body=outrpc_msg.get_message_body(),
                                 correlation_id=message.correlation_id,
+                                headers=outrpc_msg.get_headers()
                             ),
                             routing_key=message.reply_to,
                         )
@@ -84,7 +114,21 @@ class RPCHandler:
                 except Exception:
                     logging.exception("Processing error for message %r", message)
 
-        pass
+    async def __start_background_task(self, channel, func):
+        log.debug("Start background task")
+        task = asyncio.create_task(func(channel))
+        await task
+
+    async def add_service_function(self,serviceName,serviceFunctionName, func):
+        cHubRPC = f"{serviceName}.{serviceFunctionName}"
+        self.serviceFunctions[cHubRPC] = {
+            "name": cHubRPC,
+            "func": func,
+            "q": {}
+        }
+
+    async def add_background_task(self,func):
+        self.background_jobs.append(func)
 
     async def run(self):
         logging.info("starting")
@@ -96,13 +140,18 @@ class RPCHandler:
             channel = await connection.channel()
             self.exchangeDefault = channel.default_exchange
             
-            await self.init_channel_definitions(channel)
+            await self.__init_channel_definitions(channel)
 
-            await self.create_service_function_queues(channel)
 
             tasks = []
+
+            for n in self.background_jobs:
+                tasks.append(self.__start_background_task(channel,n))
+            
             for n in self.serviceFunctions:
-                tasks.append(self.start_listen(n))
+                tasks.append(self.__start_rpc_listen(n))
+
+
 
             await asyncio.gather(*tasks)
 
