@@ -91,7 +91,7 @@ docker-compose up
 2. Run HubWorker
 ```bash
 cd ./civilWarRoomHubWorker/
-python src/server.py
+python src/worker.py
 ```
 
 3. Run Hub
