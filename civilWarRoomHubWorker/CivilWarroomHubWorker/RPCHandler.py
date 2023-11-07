@@ -6,8 +6,8 @@ import asyncio
 
 from bson import Timestamp
 
-from cwrhubworker import Utils
-from cwrhubworker.stores.ContextStore import ContextStore
+from CivilWarroomHubWorker import Utils
+from CivilWarroomHubWorker.stores.ContextStore import ContextStore
 
 log = logging.getLogger(__name__)
 

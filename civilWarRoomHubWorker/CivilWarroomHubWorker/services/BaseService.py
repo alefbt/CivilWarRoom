@@ -1,6 +1,6 @@
 import logging
 
-from cwrhubworker.stores.ContextStore import ContextStore
+from CivilWarroomHubWorker.stores.ContextStore import ContextStore
 
 log = logging.getLogger(__name__)
 

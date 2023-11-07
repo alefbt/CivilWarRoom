@@ -1,8 +1,8 @@
 
 import logging
 
-from cwrhubworker.RPCHandler import InRpcMessage, ResponseRpcMessage
-from cwrhubworker.services.BaseService import BaseService
+from CivilWarroomHubWorker.RPCHandler import InRpcMessage, ResponseRpcMessage
+from CivilWarroomHubWorker.services.BaseService import BaseService
 
 log = logging.getLogger(__name__)
 

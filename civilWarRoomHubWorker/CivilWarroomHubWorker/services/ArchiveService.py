@@ -5,9 +5,9 @@ from uu import Error
 from aio_pika import Channel
 from aio_pika.abc import AbstractIncomingMessage
 
-from cwrhubworker.RPCHandler import InRpcMessage, RPCHandler
-from cwrhubworker.services.BaseService import BaseService
-from cwrhubworker.stores.DocumentStore import getDocumentStoreFromContext
+from CivilWarroomHubWorker.RPCHandler import InRpcMessage, RPCHandler
+from CivilWarroomHubWorker.services.BaseService import BaseService
+from CivilWarroomHubWorker.stores.DocumentStore import getDocumentStoreFromContext
 
 log = logging.getLogger(__name__)
 

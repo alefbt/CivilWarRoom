@@ -12,3 +12,6 @@ def json_to_obj(json_str):
 
 def obj_to_json(inobj):
     return json.dumps(inobj)
+
+def obj_filter(field_list, obj):
+   return  {key: obj[key] for key in field_list}
