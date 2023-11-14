@@ -1,15 +1,13 @@
 
 const rpcServices = require('../../../../utils/rpcService')
 
-// exports.rpcServiceName = "rpc-test-service"
-exports.rpcServiceName = "FibService"
+exports.rpcServiceName = "UserService"
 
-exports.fib = (appContext, nubmer) => {
+exports.register  = rpcServices.rpcFunctionFactory(
+    exports.rpcServiceName, "register")
 
-    return rpcServices.runServiceFun(
-            appContext,
-            exports.rpcServiceName,
-            "fib",
-            nubmer
-        )
-}
+exports.signIn      = rpcServices.rpcFunctionFactory(
+    exports.rpcServiceName, "signIn")
+
+exports.loginSuccess  = rpcServices.rpcFunctionFactory(
+    exports.rpcServiceName, "loginSuccess")

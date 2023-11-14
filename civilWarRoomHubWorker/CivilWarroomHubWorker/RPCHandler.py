@@ -4,8 +4,6 @@ from aio_pika.abc import AbstractIncomingMessage
 from aio_pika import ExchangeType
 import asyncio
 
-from bson import Timestamp
-
 from CivilWarroomHubWorker import Utils
 from CivilWarroomHubWorker.stores.ContextStore import ContextStore
 
@@ -42,22 +40,30 @@ class InRpcMessage:
         self.uiFingerprint = in_msg.headers['uiFingerprint']
         self.hubFingerprint = in_msg.headers['hubFingerprint']
         self.sourceUserInfo = in_msg.headers['_userInfo'] 
+        self.event = "HubRPC:" + in_msg.headers['HubRPC']
 
     def to_event_source_object(self):
-        
         return {
-            "@version":"eventsource#v1i",
-            "sourceUser": self.sourceUser,
-            "sourceUserInfo": self.sourceUserInfo,
-            "uiFingerprint": self.uiFingerprint,
-            "hubFingerprint":self.hubFingerprint,
-            "amqMessageId": self.msg.message_id,
+            "@version":"EventSourceV1",
             "uniqueMessageId": self.unique_msg_id,
-            "originalJwt":self.sourceJwt,
-            "timestamp": self.msg.timestamp,
-            "dataContentType":self.contentType,
-            "dataHeaders": self.headers,
-            "dataContent": self.get_content()
+            "event": self.event,
+            "userFingerprint": "Not-implemented-yet TBD",
+            "hubFingerprint":self.hubFingerprint,
+            "uiFingerprint": self.uiFingerprint,
+
+            "source": {
+                "user": self.sourceUser,
+                "userInfo": self.sourceUserInfo,
+                "originalJwt":self.sourceJwt,
+                "amqMessageId": self.msg.message_id,
+
+            },
+            "data":{
+                "contentType":self.contentType,
+                "headers": self.headers,
+                "content": self.get_content()
+            },
+            "created_at": self.msg.timestamp if(self.msg.timestamp) else Utils.get_timestamp_str_now()
         }
     
     def get_content(self):
@@ -134,7 +140,7 @@ class RPCHandler:
                         messageBody = message.body.decode()
                         functionParam = messageBody
 
-                        log.debug(f" [.] fib({functionParam}) to {message.reply_to}") 
+                        #log.debug(f" [.] fib({functionParam}) to {message.reply_to}") 
 
                         execution_function = self.serviceFunctions[serviceFuncName]["func"]
                         # functionParam

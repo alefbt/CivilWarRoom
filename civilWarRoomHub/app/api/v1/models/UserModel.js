@@ -1,9 +1,9 @@
 // const mongoose = require('mongoose');
 const logger = require('../../../../utils/logger');
 const dataStoreUtils = require('../../../../utils/dataStore')
+const rpcServiceUser = require('../services/RpcUserService')
 
-
-exports.name = "User"
+exports.name = "Users"
 
 // exports.mongooseSchema = new mongoose.Schema({
 //     userPuKfingerprint: { type: String, required: true, unique: true },
@@ -40,15 +40,33 @@ exports.name = "User"
 // }
 
 
+/*
+{
+        userObj:
+                    userPuKfingerprint:userFP,
+                    publicKey: authReqCachedObj.userPublicKey,
+                    displayName: await encTools.getPublicKeyName(authReqCachedObj.userPublicKey),
+                    isActive: true,
+                    srcInventation: srcInventation
+                }
+*/
+exports.createUser = (appContext, userObj) => {
+  return new Promise(async (resolve,reject)=>{    
+    return await rpcServiceUser.createUser(appContext,userObj)
+        .then(resolve)
+        .catch(reject)
+      })
+}
 
-exports.getActiveUser = async (appContext, userPuKfingerprint) => {
+
+exports.getActiveUser = (appContext, userPublicKeyFingerprint) => {
   return new Promise(async (resolve,reject)=>{
     try{
         const mongoDBInstance = appContext.get(dataStoreUtils.appContextName).mongoDBInstance
         const colUsers = mongoDBInstance.collection(exports.name);
-
         var usr = await colUsers.findOne({
-          userPuKfingerprint:  userPuKfingerprint
+          isActive: true,
+          publicKeyFingerprint:  userPublicKeyFingerprint
         })
         resolve(usr)
       }catch(ex){
@@ -60,6 +78,7 @@ exports.getActiveUser = async (appContext, userPuKfingerprint) => {
 
 exports.registerDatastoreCommands = (appContext, dataStoreInst) => {
     dataStoreInst[exports.name]={
-      getActiveUser: exports.getActiveUser
+      getActiveUser: exports.getActiveUser,
+      createUser: exports.createUser
     }
 }

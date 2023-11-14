@@ -125,7 +125,7 @@ exports.init = async (appContext) => {
     */
 
     
-    addSchema(require('../app/api/v1/models/HubSettingsModel'))
+    addSchema(require('../app/api/v1/models/WarroomHubModel'))
     addSchema(require('../app/api/v1/models/WarRoomModel'))
     addSchema(require('../app/api/v1/models/UserModel'))
 

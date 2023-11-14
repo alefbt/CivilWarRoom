@@ -1,6 +1,6 @@
 const logger = require('../../../../utils/logger');
 const dataStoreUtils = require('../../../../utils/dataStore')
-exports.name = "WarRoom"
+exports.name = "WarRooms"
 
 // exports.mongooseSchema = new mongoose.Schema({
 //   warroomPuKfingerprint: { type: String, required: true, unique: true },
@@ -59,24 +59,50 @@ exports.name = "WarRoom"
 // }
 
 
-  exports.getActivePublicWarRooms = async (appContext) => {
+exports.getActivePublicWarRoom = (appContext, publicKeyFingerprint) => {
+  return new Promise(async (resolve,reject)=>{
+    try{
+        const mongoDBInstance = appContext.get(dataStoreUtils.appContextName).mongoDBInstance
+        const colWarRooms = mongoDBInstance.collection(exports.name);
+        
+        const warroom = await colWarRooms.findOne({
+          isPublic: true,
+          isActive: true,
+          publicKeyFingerprint: publicKeyFingerprint
+        })
+
+        resolve(warroom)
+      }catch(ex){
+        reject(ex)
+      }
+  })
+}
+
+  exports.getActivePublicWarRooms = (appContext) => {
     return new Promise(async (resolve,reject)=>{
       try{
           const mongoDBInstance = appContext.get(dataStoreUtils.appContextName).mongoDBInstance
           const colWarRooms = mongoDBInstance.collection(exports.name);
           
-          var hub = await colWarRooms.findOne({
+          const foundRoomsResp = await colWarRooms.find({
             isPublic: true,
             isActive: true
           },{
             projection: { 
               _id: 0, 
-              warroomPuKfingerprint: 1, 
-              name: 1 
+              publicKeyFingerprint: 1, 
+              displayName: 1 
             }
           })
-        
-          resolve(hub)
+
+
+          var rooms = []
+
+          for await (const doc of foundRoomsResp) {
+            rooms.push(doc) //[doc.publicKeyFingerprint] = doc.displayName
+          }
+
+          resolve(rooms)
         }catch(ex){
           reject(ex)
         }

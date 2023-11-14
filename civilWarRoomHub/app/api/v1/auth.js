@@ -2,13 +2,18 @@ const express = require('express')
 const router = express.Router()
 const logger = require('../../../utils/logger');
 const apiUtils = require('../v1/utils')
-const warroomhuvIdentityTools = require('../../warroomhub-identity-tools')
+const warroomhubIdentityTools = require('../../warroomhub-identity-tools')
 const encTools = require('../../../utils/encryption') //' ../utils/encryption')
 const securityTool = require('../../../utils/security')
 const CACHE_AUTH_REQUSETS_NAMESPACE='hub-auth-requests'
 const CACHE_AUTHED_SESSIONS='hub-authed-sessions'
 //const UserSchemaModel = require('./models/UserSchema')
 const dataStoreUtils = require('../../../utils/dataStore')
+const UserModel = require('./models/UserModel')
+const WarRoomModel = require('./models/WarRoomModel')
+
+const rpcUserService = require("./services/RpcUserService")
+const rpcWarroomService = require("./services/RpcWarroomService")
 
 
 function authResponseProcess(appContext, req, resp){
@@ -22,7 +27,7 @@ function authResponseProcess(appContext, req, resp){
      */
 
     // decrypt mesg
-    warroomhuvIdentityTools.getIdentity(appContext).then(async identity => {
+    warroomhubIdentityTools.getIdentity(appContext).then(async identity => {
 
     const verificationResponseMessage = req.body.verificationResponseMessage
 
@@ -56,11 +61,10 @@ function authResponseProcess(appContext, req, resp){
     const userFP = await encTools.getPublicKeyFingerprint(authReqCachedObj.userPublicKey)
     const dataStore = await dataStoreUtils.getDataStore(appContext)
 
+    var usrFromDb = await UserModel.getActiveUser(appContext,userFP)
     
-//    var usrFromDb = await dataStore.getUser(appContext,userFP)
-    var usrFromDb = await require('./models/UserModel').getActiveUser(appContext,userFP)
+    if(!usrFromDb){
 
-    if(!usrFromDb)
         if(!identity.allowRegisterNewUsers)  {
             // If allowed register new users
             return resp.status(401).send({
@@ -68,26 +72,49 @@ function authResponseProcess(appContext, req, resp){
                 errorCode: "not-allowed-register-users",
                 message:"New users not allowed to register"})
         }
-        else
-        {
-            // register new user
-            usrFromDb = 
-                await dataStore
-                .createUser(appContext, {
-                    userPuKfingerprint:userFP,
-                    publicKey: authReqCachedObj.userPublicKey,
-                    displayName: await encTools.getPublicKeyName(authReqCachedObj.userPublicKey),
-                    isActive: true,
-                    srcInventation: srcInventation
-                })
-        }
 
+        // register new user
+        var hasError = false
+
+        var userObjN = {
+            displayName: await encTools.getPublicKeyName(authReqCachedObj.userPublicKey),
+            isActive: true,
+            
+            publicKeyFingerprint:userFP,
+            publicKeyType: "openpgp",
+            publicKey: authReqCachedObj.userPublicKey,
+            
+
+            srcInventation: srcInventation,
+            hubPublicKey: identity.armoredPublicKey,
+            hubPublicKeyType: identity.publicKeyType
+        }
+        
+        var _errM = ""
+
+        await rpcUserService.register(appContext,userObjN)
+            .then(resResp=>{
+                usrFromDb=resResp
+                hasError = false
+            })
+            .catch(e=>{
+                _errM = e
+                hasError = true
+            })
+
+        if(hasError)
+            return resp.status(401).send({
+                success: false, 
+                errorCode: "error-registration-user",
+                message:`Error: ${_errM}`})
+    
+    }
 
     // Verifiy selected room
     // If new room
     //      If Allowed register new room
-    const warroomHubAclSchema = require('./models/WarRoomHubACLSchema')
     var warroomFromDb = null;
+    var currentWarroom = null;
 
     if(!sessionResponseMessage.selectedWarRoom.id){
 
@@ -96,26 +123,31 @@ function authResponseProcess(appContext, req, resp){
             success: false, 
             errorCode: "not-allowed-create-warrooms",
             message:"Not allowed to register new WarRooms"})
-    
-        // Register 
-        warroomFromDb = await dataStore.createWarRoom(
-            appContext,
-            sessionResponseMessage.selectedWarRoom.name,
-            userFP
-            )
 
+        
+        var passphrase =    encTools.generateRandomKey()
+        const warroom_keys =  await encTools.generateKeys(sessionResponseMessage.selectedWarRoom.name, "non@dummy-domain.co",passphrase)
 
-        // Add permissions
-        var aclFromDb = await dataStore.createAllowACL(appContext,
-            `${warroomHubAclSchema.PREFIX.user}:${usrFromDb.userPuKfingerprint}`,
-            `${warroomHubAclSchema.PREFIX.warroom}:${warroomFromDb.warroomPuKfingerprint}`,
-            warroomHubAclSchema.PERMISSIONS.all,
-            srcInventation,
-            null,
-        )
+        const warroomdata = {
+            "displayName": sessionResponseMessage.selectedWarRoom.name,
+            "ownerFingerprint": userFP,
+            "ownerFingerprintType":encTools.getEncTypeName(),
+            "isActive": true,
+            "isPublic": true,
+            "publicKeyFingerprint": await encTools.getPublicKeyFingerprint(warroom_keys['publicKey']),
+            "publicKey": warroom_keys['publicKey'],
+            "publicKeyType": encTools.getEncTypeName(),               
+            "privateKey": warroom_keys['privateKey'],
+            "privateKeyType": encTools.getEncTypeName(),
+            "privateKeyPass": passphrase
+        }
+
+        currentWarroom = await rpcWarroomService.register(appContext,warroomdata )
+        warroomFromDb = currentWarroom['warroom']
 
     } else {
-        warroomFromDb = await dataStore.getWarRoom(appContext, sessionResponseMessage.selectedWarRoom.id)
+        warroomFromDb = await WarRoomModel.getActivePublicWarRoom(appContext, sessionResponseMessage.selectedWarRoom.id)
+        // warroomFromDb = await dataStore.getWarRoom(appContext, sessionResponseMessage.selectedWarRoom.id)
 
         if(!warroomFromDb.isActive)
             return resp.status(404).send({
@@ -125,7 +157,6 @@ function authResponseProcess(appContext, req, resp){
            
         if(!warroomFromDb.isPublic)
             throw new Error("TBD - need implement on exisiting policy")
-
         // build groups
         // build roles
 
@@ -137,17 +168,19 @@ function authResponseProcess(appContext, req, resp){
         // Check permissions
     }
 
-
-    const jwtToken =encTools.generateJWT({
+    const jwtData = {
         issuer:identity.name,
         displayName: usrFromDb.displayName,
 
-        userPuKFingerprint: usrFromDb.userPuKfingerprint,
-        warRoomFingerprint: warroomFromDb.warroomPuKfingerprint,
-        warRoomName: warroomFromDb.name,
+        userPuKFingerprint: usrFromDb.publicKeyFingerprint,
+        warRoomFingerprint: warroomFromDb.publicKeyFingerprint,
+        warRoomDisplayName: warroomFromDb.displayName,
         dataHubFingerprint: identity.fingerprint,
+        
         roles: ['user'] //TODO : Set roles
-    },jwtSecretPass)
+    }
+
+    const jwtToken =encTools.generateJWT(jwtData,jwtSecretPass)
     
 
     const messageToEncrypt = {
@@ -176,12 +209,12 @@ function authResponseProcess(appContext, req, resp){
 
     apiUtils.createPlainResponseObject(appContext,dataToSend).then( async data=> {
         resp.send(data)
-        usrFromDb.lastlogin = new Date()
-        await usrFromDb.save()
+        await rpcUserService.loginSuccess(appContext,{
+            "jwt":jwtToken,
+            "publicKeyFingerprint": usrFromDb.publicKeyFingerprint
+        })
     })
-    
-    // resp.send({status:"ok"})
-    // verify sign from cache
+ 
     })
 
 }
@@ -190,7 +223,7 @@ function authResponseProcess(appContext, req, resp){
 function authVerifyProcess(appContext, req, resp){
 
     // decrypt mesg
-    warroomhuvIdentityTools.getIdentity(appContext).then(async identity => {
+    warroomhubIdentityTools.getIdentity(appContext).then(async identity => {
 
     const verificationMessage = req.body.verificationMessage
 
@@ -215,7 +248,7 @@ function authVerifyProcess(appContext, req, resp){
 }
 
 function authRequestProcess(appContext, req, resp){
-    warroomhuvIdentityTools.getIdentity(appContext).then(async identity => {
+    warroomhubIdentityTools.getIdentity(appContext).then(async identity => {
 
         let sessionKey = encTools.generateRandomKey()
        
@@ -228,7 +261,7 @@ function authRequestProcess(appContext, req, resp){
         var availableWarRooms  = {}
         if(publicWarRooms)
             publicWarRooms.map(c=>{
-                availableWarRooms[`${c.warroomPuKfingerprint}`] = c.name
+                availableWarRooms[`${c.publicKeyFingerprint}`] = c.displayName
             })
         
 

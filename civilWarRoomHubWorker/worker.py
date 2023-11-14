@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import logging.config
 from CivilWarroomHubWorker.MultiCoreWrapper import MultiCoreWrapper
@@ -17,6 +16,7 @@ log = logging.getLogger(__name__)
 
 async def start_worker_agent():
     wa = WorkerAgent()
+    await wa.init()
     await wa.start()
 
 if __name__ == "__main__":

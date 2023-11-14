@@ -1,6 +1,7 @@
 import logging
 
 from CivilWarroomHubWorker.stores.ContextStore import ContextStore
+from CivilWarroomHubWorker.stores.DocumentStore import getDocumentStoreFromContext
 
 log = logging.getLogger(__name__)
 
@@ -9,6 +10,8 @@ class BaseService:
         log.debug(f"initing service {self.__class__.__name__}")
         self.service_name = self.__class__.__name__
         self.context = context
+        self.documentStore = getDocumentStoreFromContext(self.context)
+
 
     def _get_func_name(self, f):
         return f.__qualname__.split(".")[1]

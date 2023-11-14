@@ -137,10 +137,14 @@ appContext.addPostBoot("Add HubIdentity", (resolve, reject) => {
   
   hubIdentity.getIdentity(appContext).then((wridentity)=>{
     appContext.add(hubIdentity.appContextName, wridentity)
+
     logger.info(`!## War Room Name : _${wridentity.name}_`)
     logger.info(`!## War Room certificate fingertprint : ${wridentity.fingerprint}`)
+    resolve()
+
+  }) .catch( (e) => {
+      reject(e)
   })
-  resolve()
 })
 
 
@@ -150,14 +154,25 @@ appContext.boot().then( () => {
   appContext.postboot().then( () => {
     logger.debug("PostBoot success.")
 
-    const rtest = require('./app/api/v1/services/RpcUserService')
-    for(var i = 0 ; i < 1 ; i++ )
-      rtest.fib(appContext,19).then(r=>{
-        console.log("WORKS!",r)
-      }).catch(f=>{
-        console.log("ERROR",f)})
+    // const rtest = require('./app/api/v1/services/RpcUserService')
+    // for(var i = 0 ; i < 1 ; i++ )
+    //   rtest.fib(appContext,12).then(r=>{
+    //     console.log("WORKS!",r)
+    //   }).catch(f=>{
+    //     console.log("ERROR",f)})
       logger.info("Boot success. finished loading")      
+     })
+     .catch( (e) => {
+        logger.error("Postboot ERROR:")
+        logger.error(e)
+        process.exit(1)
     })
+}) 
+.catch( (e) => {
+  logger.error("FATAL ERROR:")
+    logger.error(e)
+    process.exit(1)
+
 })
 
 

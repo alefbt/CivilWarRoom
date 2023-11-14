@@ -51,6 +51,7 @@ async function setWarroomHubIdentity(appContext, armoredPublicKey, armoredPrivat
         process.env.WARROOMHUB_PRIVATE_KEY_SECRET)
 
     warroomhubIdentity['publicKey'] = publicKey
+    warroomhubIdentity['publicKeyType'] = "openpgp"
     warroomhubIdentity['armoredPublicKey'] = armoredPublicKey
     warroomhubIdentity['fingerprint'] =  await encTools.getPublicKeyFingerprint(publicKey)
 
@@ -66,10 +67,40 @@ async function setWarroomHubIdentity(appContext, armoredPublicKey, armoredPrivat
     warroomhubIdentity['initated'] = true;
 
     // Overwrite if exist value
-    const hubSettings = await require('./api/v1/models/HubSettingsModel').getHubSettingsByIdentity(appContext,warroomhubIdentity)
+    var hubSettings = await require('./api/v1/models/WarroomHubModel')
+        .getWarroomHubByFingerprint(
+            appContext,warroomhubIdentity.fingerprint)
 
-    if(hubSettings){
-        warroomhubIdentity['name'] = hubSettings.name
+    if(!hubSettings){
+        // Register
+        const rpcWarroomHubService = require('./api/v1/services/RpcWarroomHubService')
+        try{
+            const hubSettingsObj = await rpcWarroomHubService.register(appContext,{
+                "displayName" : warroomhubIdentity['name'],
+                "isActive": warroomhubIdentity['isActive'],
+                "publicKeyFingerprint": warroomhubIdentity['fingerprint'],
+                "publicKeyType": warroomhubIdentity['publicKeyType'],
+                "publicKey":warroomhubIdentity['armoredPublicKey'],
+        
+                "ownerFingerprint": "self-generated",
+                "ownerFingerprintType": "text",
+        
+                "allowCreateWarRoomsToRegisterdUsers": warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'],
+                "allowRegisterNewUsers": warroomhubIdentity['allowRegisterNewUsers'],
+            })
+
+            if(!hubSettingsObj['success'])
+                throw new Error("Couldnot create WarroomHub : " + hubSettingsObj)
+
+            hubSettings = hubSettingsObj['warroomhub']
+        }catch(e){
+            throw new Error("Couldnot create WarRoomHub in warroomhub-identity-tools.setWarroomHubIdentity() ERR: "+ e.message)
+        }
+
+    }
+
+    if(hubSettings){ // over write values
+        warroomhubIdentity['name'] = hubSettings.displayName
         warroomhubIdentity['isActive'] = hubSettings.isActive
         warroomhubIdentity['allowCreateWarRoomsToRegisterdUsers'] = hubSettings.allowCreateWarRoomsToRegisterdUsers
         warroomhubIdentity['allowRegisterNewUsers'] = hubSettings.allowRegisterNewUsers    
@@ -86,7 +117,11 @@ const getIdentity = async (appContext) => new Promise((resolve,reject)=>{
     const filePath = process.env.WARROOMHUB_PUBLIC_KEY_FILE
 
 
-    if( !fs.existsSync(filePath)) {
+    if (warroomhubIdentity['initated'] === true){
+        logger.debug(`Cached identity`)
+        return resolve(warroomhubIdentity)
+    }
+    else if( !fs.existsSync(filePath)) {
         generateNewWarRoomHubCerticiate(appContext).then(async (newKeysGenerated)=>{
 
             getCertificates(appContext).then(async (newKeys)=>{
@@ -97,12 +132,11 @@ const getIdentity = async (appContext) => new Promise((resolve,reject)=>{
                     .then((owrhubIdentity)=>{
                         resolve(owrhubIdentity)
                     })
+                    .catch( (e) => {
+                        reject(e)
+                    })
             })
         })
-    }
-    else if (warroomhubIdentity['initated'] === true){
-        logger.debug(`Cached identity`)
-        return resolve(warroomhubIdentity)
     }
     else {
         getCertificates(appContext).then(async (newKeys)=>{
@@ -112,6 +146,9 @@ const getIdentity = async (appContext) => new Promise((resolve,reject)=>{
                 newKeys['privateKey'])
                 .then((owrhubIdentity)=>{
                     resolve(owrhubIdentity)
+                })
+                .catch( (e) => {
+                    reject("Cannot setWarroomHubIdentity :" + e)
                 })
         })
     }

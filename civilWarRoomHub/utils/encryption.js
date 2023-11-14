@@ -43,7 +43,9 @@ exports.generateKeys = async ( name, email, passphrase) => {
         passphrase: passphrase
     });
 }
-
+exports.getEncTypeName = () => {
+    return "openpgp"
+}
 exports.getOpenpgpReadKeyByType = async (openpgpKey) => {
     var pkey = null
 
@@ -59,7 +61,7 @@ exports.getOpenpgpReadKeyByType = async (openpgpKey) => {
 
 exports.getPublicKeyFingerprint = async (openpgpPublicKey) => {
     var pkey = await exports.getOpenpgpReadKeyByType(openpgpPublicKey)
-    return pkey.getFingerprint()
+    return pkey.getFingerprint().toUpperCase()
 }
 
 exports.getPublicKeyName = async (openpgpPublicKey) => {

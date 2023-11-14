@@ -1,0 +1,35 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://alefbt.com/warroom/warroomhub.schema-v1.json",
+    "title": "WarRoomHub",
+    "description": "A WarRoom Hub",
+    "type": "object",
+    "required": [
+        "displayName",
+        "publicKeyFingerprint",
+        "publicKey",
+        "publicKeyType"
+    ],
+    "properties" : {
+        "displayName" : {"type" : "string"},
+        "isActive": {
+            "type":"boolean",
+            "default": true
+        },       
+        "publicKeyFingerprint": {"type" : "string"},
+        "publicKeyType": {"type":"string"},
+        "publicKey":{"type":"string"},
+
+        "ownerFingerprint": {"type":"string"},
+        "ownerFingerprintType":{"type":"string"},
+
+        "allowCreateWarRoomsToRegisterdUsers": {
+            "type":"boolean",
+            "default": true
+        },
+        "allowRegisterNewUsers": {
+            "type":"boolean", 
+            "default": true
+        }
+    }
+}

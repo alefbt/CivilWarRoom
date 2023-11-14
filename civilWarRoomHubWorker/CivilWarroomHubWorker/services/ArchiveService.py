@@ -1,10 +1,6 @@
-
 import logging
-from uu import Error
-
 from aio_pika import Channel
 from aio_pika.abc import AbstractIncomingMessage
-
 from CivilWarroomHubWorker.RPCHandler import InRpcMessage, RPCHandler
 from CivilWarroomHubWorker.services.BaseService import BaseService
 from CivilWarroomHubWorker.stores.DocumentStore import getDocumentStoreFromContext
@@ -25,8 +21,8 @@ class ArchiveService (BaseService):
                     inrpcmsgR = InRpcMessage(message)
 
                     log.debug(f" [.] Archive {inrpcmsgR.unique_msg_id} to Store")
-                    await getDocumentStoreFromContext(self.context).store_eventsource(inrpcmsgR)
-
+                    docStore = getDocumentStoreFromContext(self.context)
+                    await docStore.store_eventsource(inrpcmsgR)
                     await message.ack()
                     log.debug(f" [.] Archive ACK {inrpcmsgR.unique_msg_id}")
 

@@ -51,7 +51,7 @@ if(!appContext.inited){
                 try{
                     __itmBootSeqFunc(fnResolve, fnReject)
                 }catch(ex){
-                    logger.error(ex)
+                    logger.error('context boot function error', ex)
                     fnReject(ex)
                 }
             }))

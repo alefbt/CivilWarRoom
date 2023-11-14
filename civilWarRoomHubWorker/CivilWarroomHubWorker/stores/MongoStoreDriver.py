@@ -27,3 +27,6 @@ class MongoStoreDriver:
 
      async def findOne(self, collection,  filter, *args):
         return await self.db[collection].find_one(filter, *args)
+     
+     async def updateOne(self, collection,  filter, update):
+        return await self.db[collection].update_one(filter, update)

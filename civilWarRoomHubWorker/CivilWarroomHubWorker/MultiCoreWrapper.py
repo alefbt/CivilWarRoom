@@ -2,7 +2,6 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 import logging
 import multiprocessing
-import random
 
 log = logging.getLogger(__name__)
 

@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://alefbt.com/warroom/user.schema-v1.json",
+    "title": "User",
+    "description": "A WarRoom user",
+    "type": "object",
+    "required": [
+        "displayName",
+        "publicKeyFingerprint"
+    ],
+    "properties" : {
+        "displayName" : {"type" : "string"},
+        "isActive": {"type":"boolean"},
+                                 
+        "publicKeyFingerprint": {"type" : "string"},
+        "publicKeyType": {"type":"string"},
+        "publicKey":{"type":"string"},
+                           
+        "srcInventation": {"type":"string"},
+                                    
+        "hubPublicKeyFingerprint": {"type":"string"},
+        "hubPublicKeyType": {"type":"string"}
+    }
+}
