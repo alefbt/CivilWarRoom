@@ -1,0 +1,39 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://alefbt.com/warroom/warroom.schema-v1.json",
+    "title": "WarRoom",
+    "description": "A WarRoom",
+    "type": "object",
+    "required": [
+        "displayName",
+        "publicKeyFingerprint",
+        "publicKey",
+        "publicKeyType",
+        "ownerFingerprint",
+        "ownerFingerprintType",
+        "privateKey",
+        "privateKeyType",
+        "privateKeyPass"
+    ],
+    "properties" : {
+        "displayName" : {"type" : "string"},
+        "isActive": {
+            "type":"boolean",
+            "default": true
+        },       
+        "isPublic": {
+            "type":"boolean",
+            "default": true
+        }, 
+        "publicKeyFingerprint": {"type" : "string"},
+        "publicKeyType": {"type":"string"},
+        "publicKey":{"type":"string"},
+
+        "privateKey":{"type":"string"},
+        "privateKeyType": {"type":"string"},
+        "privateKeyPass": {"type":"string"},
+
+        "ownerFingerprint": {"type":"string"},
+        "ownerFingerprintType":{"type":"string"}
+    }
+}

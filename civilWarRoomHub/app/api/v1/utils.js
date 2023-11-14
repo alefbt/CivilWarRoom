@@ -1,6 +1,6 @@
 
 
-const warroomIdentityTools = require('../../war-room-identity-tools')
+const warroomIdentityTools = require('../../warroomhub-identity-tools')
 const _ = require('lodash')
 
 

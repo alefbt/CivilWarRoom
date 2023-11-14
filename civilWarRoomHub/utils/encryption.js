@@ -12,6 +12,14 @@ exports.verifyJWT = (jwtToken, secretToken) => {
     return jwt.verify(jwtToken,secretToken)
 }
 
+exports.readJWT = (plainJWT) => {
+    const b = plainJWT.split(".")
+    return {
+        "headers": utilsTools.base64ToObj(b[0]),
+        "data": utilsTools.base64ToObj(b[1])
+    }
+}
+
 exports.generateRandomKey = () =>{
     return exports.sha1sum(`t-SALT-${uuid4()}`)
 }
@@ -35,20 +43,37 @@ exports.generateKeys = async ( name, email, passphrase) => {
         passphrase: passphrase
     });
 }
+exports.getEncTypeName = () => {
+    return "openpgp"
+}
+exports.getOpenpgpReadKeyByType = async (openpgpKey) => {
+    var pkey = null
+
+    switch(typeof openpgpKey){
+        case 'string':
+            pkey = await exports.openpgpReadKey(openpgpKey)
+            break;
+        default:
+            pkey = openpgpKey
+    }
+    return pkey
+}
+
+exports.getPublicKeyFingerprint = async (openpgpPublicKey) => {
+    var pkey = await exports.getOpenpgpReadKeyByType(openpgpPublicKey)
+    return pkey.getFingerprint().toUpperCase()
+}
+
+exports.getPublicKeyName = async (openpgpPublicKey) => {
+    var pkey = await exports.getOpenpgpReadKeyByType(openpgpPublicKey)
+    return pkey.users.map((u)=>{ return u.userID.name}).join(',')
+}
 
 exports.encryptObject = async (data, openpgpPublicKey, openpgpSigningKey) => {
     const cleartextMessage =  utilsTools.objToBase64(data)
     const unsignedMessage = await openpgp.createMessage({ text: cleartextMessage });
     
-    var encryptionKey = null
-
-    switch(typeof openpgpPublicKey){
-        case 'string':
-            encryptionKey = await exports.openpgpReadKey(openpgpPublicKey)
-            break;
-        default:
-            encryptionKey = openpgpPublicKey
-    }
+    var encryptionKey = await exports.getOpenpgpReadKeyByType(openpgpPublicKey)
 
     const encOpts = {
         message: unsignedMessage,
@@ -67,10 +92,10 @@ exports.decryptAndVerifyMessage = async (encryptedObject, openpgpPrivateKey, ver
         armoredMessage: encryptedObject // parse armored message
     })
 
-    var verificationKeys = null
+    var verificationKeys = await exports.getOpenpgpReadKeyByType(verificationKey)
 
 
-
+/*
     switch(typeof verificationKey){
         case 'undefined':
             throw new Error("verificationKey is undefined in validation process")
@@ -80,7 +105,7 @@ exports.decryptAndVerifyMessage = async (encryptedObject, openpgpPrivateKey, ver
         default:
             verificationKeys = verificationKey
     }
-
+*/
 
     const decryptOpts = {
         message,

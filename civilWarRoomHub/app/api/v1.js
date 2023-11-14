@@ -4,14 +4,14 @@ const router = express.Router()
 const logger = require('../../utils/logger');
 const apiUtils = require('./v1/utils')
 const v1auth = require('./v1/auth')
-
+const warroomhubIdentityTools = require('../warroomhub-identity-tools')
 
 module.exports.attachRouter = function(appContext, expressApp) {
 
     v1auth.attachRouter(appContext, router);
-
+    
     router.get('/info', (request, response) => {
-        const identity = appContext.get('warroomIdentity')
+        const identity = appContext.get(warroomhubIdentityTools.appContextName)
         
         const data = {
             "version":  appContext.get("packageConfig").version,

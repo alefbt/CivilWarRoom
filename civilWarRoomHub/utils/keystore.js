@@ -23,6 +23,8 @@ function createFileStore (filePath) {
 
 exports.createFileStore = createFileStore
 
+exports.appContextName = "keystore"
+
 exports.load = function(storePath){
   return createFileStore(storePath)
 }
