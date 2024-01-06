@@ -31,6 +31,8 @@ export default route(function ({ store } /* , ssrContext } */) {
     const identityStore = useUserIdentityStore(store)
 
     try{
+      identityStore.loadCachedSessionIdentity()
+
       if(to.meta.isPublic===true || identityStore.isAuthenticated){
         next();
       }
