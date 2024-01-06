@@ -91,7 +91,8 @@ docker-compose up
 2. Run HubWorker
 ```bash
 cd ./civilWarRoomHubWorker/
-python src/worker.py
+source source .venv/bin/activate
+python worker.py
 ```
 
 3. Run Hub
