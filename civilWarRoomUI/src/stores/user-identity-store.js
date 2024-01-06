@@ -48,9 +48,9 @@ export const useUserIdentityStore = defineStore('UserIdentity', {
       try {
         this.jwtToken = sessionLoginObject.jwt
         this.jwtData = encryption.openJWT(this.jwtToken)
-        this.displayName = this.jwtData.displayName
-        this.roles = this.jwtData.roles
-        this.warRoom = this.jwtData.warRoom
+        this.displayName = this.jwtData.data.displayName
+        this.roles = this.jwtData.data.roles
+        this.warRoom = this.jwtData.data.warRoom
         this.sessionKey = sessionLoginObject.sessionKey
         this.validationSettings = sessionLoginObject.validation
         this.isAuthenticated = true

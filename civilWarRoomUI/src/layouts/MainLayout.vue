@@ -17,10 +17,31 @@
           {{ $t('Civil War Room') }} 
         </q-toolbar-title>
 
+        <div class="text-h4">
+          {{ ctime }}
+        </div>
+
+        <div style="padding-left: 1em; padding-right: 1em;">
+          {{ cdate }}
+        </div>
+
 
         <div class="bg-white">
           <LanguageSwitch/>
         </div>
+
+        <div style="padding-left: 1em; padding-right: 1em;">
+          {{ loggedinUser }}
+        </div>
+
+        <q-btn
+          flat
+          dense
+          round
+          icon="logout"
+          aria-label="Logout"
+          :to="'/auth/logout'"
+        />
         
         <!--
         <div> v{{ $q.version }}</div>
@@ -68,17 +89,44 @@ export default defineComponent({
   name: 'MainLayout',
 
   components: {
-    //EssentialLink,
     LanguageSwitch
   },
 
+  data () {
+      return {
+          ctime: "HH:MM:SS-1",
+          cdate: "dd/mm/yyyy",
+      }
+  },
+
+  created () {
+      this.updateNow()
+      this.scheduleUpdateNow();
+  },
+
+  methods: {
+      updateNow() {
+          const a = new Date()
+          this.ctime = a.toTimeString().split(" ")[0]
+          this.cdate = a.toLocaleString().split(',')[0]
+          this.scheduleUpdateNow();
+      },
+      scheduleUpdateNow() {
+          setTimeout(this.updateNow, 1000);
+      }
+  },
   setup () {
     const leftDrawerOpen = ref(false)
 
-    //const {testT} = storeToRefs(useUserIdentityStore())
+    const userIdentityStore =useUserIdentityStore()
+    userIdentityStore.loadCachedSessionIdentity()
+    console.log(userIdentityStore.displayName)
+    // const loggedinUser = ref(userIdentityStore.displayName)
+
     const bus = inject('bus') // inside setup()
 
-    return {      
+    return {     
+      loggedinUser:  userIdentityStore.displayName,
       leftDrawerOpen,
       toggleLeftDrawer () {
         leftDrawerOpen.value = !leftDrawerOpen.value

@@ -12,7 +12,7 @@
         <q-tab name="articles" label="Articles" />
       </q-tabs>
 
-      <router-link :to="'/auth/logout'">logout</router-link>
+      
     </div>
   </q-page>
 </template>
