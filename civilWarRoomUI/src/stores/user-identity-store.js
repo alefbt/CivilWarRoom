@@ -30,6 +30,20 @@ export const useUserIdentityStore = defineStore('UserIdentity', {
       const lsobj = LocalStorage.getItem(localStorageKey) || {}
       this.setUserSessionIdentity(lsobj)
     },
+    logout(){
+      this.isUserIdentitySetted = false
+      this.displayName= ''
+      this.isAuthenticated= false,
+      this.sessionKey= '',
+      this.jwtToken= '',
+      this.jwtData= {},
+      this.roles= [],
+      this.validationSettings= {}
+      LocalStorage.remove(localStorageKey)
+      bus.emit(utilsBusEvents.e_LOGGED_OUT, 1)
+
+    },
+
     setUserSessionIdentity(sessionLoginObject){
       try {
         this.jwtToken = sessionLoginObject.jwt

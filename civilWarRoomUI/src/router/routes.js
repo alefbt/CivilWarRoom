@@ -20,6 +20,12 @@ const routes = [
           isPublic: true,
         },
         component: () => import('pages/auth/LoginPage.vue') },
+      
+      { path: 'logout', name:"AuthLogout", 
+        meta: {
+          isPublic: false,
+        },
+        component: () => import('pages/auth/LogoutPage.vue') },
       { path: 'register', name:"AuthRegister", 
         meta: {
           isPublic: true,

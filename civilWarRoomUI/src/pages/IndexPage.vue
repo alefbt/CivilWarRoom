@@ -1,13 +1,19 @@
 <template>
-  <q-page class="flex flex-center">
+  <q-page class="flex">
     <!-- <img
       alt="Quasar logo"
       src="~assets/quasar-logo-vertical.svg"
       style="width: 200px; height: 200px"
     > -->
+    <div class="col">
+      <q-tabs v-model="tab">
+        <q-tab name="images" label="Images" />
+        <q-tab name="videos" label="Videos" />
+        <q-tab name="articles" label="Articles" />
+      </q-tabs>
 
-    <router-link :to="'/auth/login'">login</router-link>
-    
+      <router-link :to="'/auth/logout'">logout</router-link>
+    </div>
   </q-page>
 </template>
 
