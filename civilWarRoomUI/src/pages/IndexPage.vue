@@ -6,11 +6,7 @@
       style="width: 200px; height: 200px"
     > -->
     <div class="col">
-      <q-tabs v-model="tab">
-        <q-tab name="images" label="Images" />
-        <q-tab name="videos" label="Videos" />
-        <q-tab name="articles" label="Articles" />
-      </q-tabs>
+      sss
 
       
     </div>

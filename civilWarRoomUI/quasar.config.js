@@ -108,7 +108,13 @@ module.exports = configure(function (/* ctx */) {
           secure: false,
           changeOrigin: true,
           logLevel: 'debug',
+        },
+      
+        '/ws/main': {
+          target: 'ws://localhost:8080',
+          ws: true
         }
+        
       }
     },
 

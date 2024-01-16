@@ -47,29 +47,13 @@
         <div> v{{ $q.version }}</div>
 -->
       </q-toolbar>
+
+      <!-- <q-tabs v-model="tab">
+        <q-tab name="main" label="Home" />
+      </q-tabs> -->
     </q-header>
 
-    <!--
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
-      <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
-
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-        />
-      </q-list>
-    </q-drawer>
--->
+   
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -81,9 +65,8 @@ import { defineComponent, ref, computed } from 'vue'
 // import EssentialLink from 'components/EssentialLink.vue'
 import LanguageSwitch from 'components/LanguageSwitch.vue'
 import { inject } from 'vue'
-import { useUserIdentityStore } from 'stores/user-identity-store';
-import { storeToRefs } from 'pinia';
-
+import { useUserIdentityStore } from 'stores/user-identity-store'
+import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'MainLayout',
@@ -124,6 +107,25 @@ export default defineComponent({
     // const loggedinUser = ref(userIdentityStore.displayName)
 
     const bus = inject('bus') // inside setup()
+
+    console.log("WS connect ....")
+
+    const so = new WebSocket('ws://localhost:9000/ws/main')
+
+    console.log(so)
+    so.onmessage = (event) => {
+      console.log("E",event)
+    };
+    so.onclose = ( e,x,y ) => {
+      console.log("onerror",e,x,y)
+    }
+    so.onerror = ( e,x,y ) => {
+      console.log("onerror",e,x,y)
+    }
+    so.onopen = ( e,x,y ) => {
+      console.log(e,x,y)
+      so.send("test from ui");
+    }
 
     return {     
       loggedinUser:  userIdentityStore.displayName,

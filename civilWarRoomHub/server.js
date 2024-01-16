@@ -2,6 +2,7 @@ const logger = require('./utils/logger');
 const dotenv = require('dotenv');
 const appContext = require('./utils/appContext').getAppContext()
 const packageConfig = require('./package.json')
+const websocketUtil = require('./utils/websocket')
 logger.info("Starting server of War Room Hub")
 
 
@@ -46,7 +47,6 @@ appContext.addBoot("Add DataStore service and models to context", (resolve,rejec
 
 })
 
-
 appContext.addBoot("Add RpcServices to context", (resolve,reject)=>{
   const rpcServices = require('./utils/rpcService')
 
@@ -68,6 +68,18 @@ appContext.addBoot("Add WebServer", (resolve,reject)=>{
 
   const securityTool = require('./utils/security')
 
+  var myFilter = function(req) {
+    var paths= [
+      "/hub/api/v1/auth",
+      "/hub/api/v1/info",
+      "/echo",
+      '/^\/websocketi([^\/]*)$/'
+    ]
+    logger.debug(`REQ url: ${req.url}`)
+
+    return true;
+  }
+
   app.use(
     jwt({
       secret: securityTool.getJWTSecretKey(appContext),
@@ -75,8 +87,10 @@ appContext.addBoot("Add WebServer", (resolve,reject)=>{
     }).unless({ path: [
       "/hub/api/v1/auth",
       "/hub/api/v1/info",
-      "/echo"
+      "/echo",
+      "/ws/*",
     ] })
+    .unless(myFilter)
   );
 
 
@@ -104,6 +118,7 @@ appContext.addBoot("Add WebServer", (resolve,reject)=>{
   const wrApi1Routes = require('./app/api/v1')
   wrApi1Routes.attachRouter(appContext, app)
 
+  websocketUtil(appContext,app)
 
   app.get('/', (req, res) => {
     res.send('Hub!')
